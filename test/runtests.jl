@@ -277,6 +277,53 @@ using Test
         @test g ≈ -0.397262 atol=1e-4
    end
 
+   @testset "AngleScattering" begin
+        x = 1.0
+        m = 1.5 - im*1.0
+        θ = 0:30:180
+        μ = cosd.(θ)
+
+        qext, qsca, qback, g = mie(m, x)
+        S1, S2 = mie_S1_S2(m, x, μ)
+        S1 *= √(π*x^2*qext)
+        S2 *= √(π*x^2*qext)
+
+        @test real(S1[1]) ≈ 0.584080 atol=1e-6
+        @test imag(S1[1]) ≈ 0.190515 atol=1e-6
+        @test real(S2[1]) ≈ 0.584080 atol=1e-6
+        @test imag(S2[1]) ≈ 0.190515 atol=1e-6
+
+        @test real(S1[2]) ≈ 0.565702 atol=1e-6
+        @test imag(S1[2]) ≈ 0.187200 atol=1e-6
+        @test real(S2[2]) ≈ 0.500161 atol=1e-6
+        @test imag(S2[2]) ≈ 0.145611 atol=1e-6
+
+        @test real(S1[3]) ≈ 0.517525 atol=1e-6
+        @test imag(S1[3]) ≈ 0.178443 atol=1e-6
+        @test real(S2[3]) ≈ 0.287964 atol=1e-6
+        @test imag(S2[3]) ≈ 0.041054 atol=1e-6
+
+        @test real(S1[4]) ≈ 0.456340 atol=1e-6
+        @test imag(S1[4]) ≈ 0.167167 atol=1e-6
+        @test real(S2[4]) ≈ 0.0362285 atol=1e-6
+        @test imag(S2[4]) ≈ -0.0618265 atol=1e-6
+
+        @test real(S1[5]) ≈ 0.400212 atol=1e-6
+        @test imag(S1[5]) ≈ 0.156643 atol=1e-6
+        @test real(S2[5]) ≈ -0.174875 atol=1e-6
+        @test imag(S2[5]) ≈ -0.122959 atol=1e-6
+
+        @test real(S1[6]) ≈ 0.362157 atol=1e-6
+        @test imag(S1[6]) ≈ 0.149391 atol=1e-6
+        @test real(S2[6]) ≈ -0.305682 atol=1e-6
+        @test imag(S2[6]) ≈ -0.143846 atol=1e-6
+
+        @test real(S1[7]) ≈ 0.348844 atol=1e-6
+        @test imag(S1[7]) ≈ 0.146829 atol=1e-6
+        @test real(S2[7]) ≈ -0.348844 atol=1e-6
+        @test imag(S2[7]) ≈ -0.146829 atol=1e-6
+   end
+
    @testset "Notebook" begin
         N = 500
         m = 1.5

@@ -225,3 +225,84 @@ function small_mie_conducting_S1_S2(m, x, μ)
 
     return S1, S2
 end
+
+function small_mie_S1_S2(m, x, μ)
+    m2 = m^2
+    m4 = m2^2
+    x2 = x^2
+    x3 = x2*x
+    x4 = x2^2
+
+    D = m2 + 2 + (1 - 0.7*m2)*x2
+    D -= (8*m4-385*m2+350)*x4/1400
+    D += 2im * (m2 - 1)*x3*(1-0.1*x2)/3
+
+    ahat1 = 2im*(m2-1)/3*(1-0.1*x2 + (4*m2 + 5)*x4/1400)/D
+
+    bhat1 = im*x2*(m2-1)/45*(1+(2*m2-5)/70*x2)
+    bhat1 /= 1 - (2*m2 - 5)/30*x2
+
+    ahat2 = 1im*x2*(m2-1)/15*(1-x2/14)
+    ahat2 /= 2*m2 + 3 - (2*m2 - 7) / 14*x2
+
+    S1 = @. 1.5*x3*(ahat1 + bhat1*μ + 5/3*ahat2*μ)
+    S2 = @. 1.5*x3*(bhat1 + ahat1*μ+5/3*ahat2*(2*μ^2-1))
+
+    norm = √(π*6*x3*real(ahat1 + bhat1 + 5*ahat2/3))
+    S1 /= norm
+    S2 /= norm
+
+    return S1, S2
+end
+
+function normalization_factor(a, b, x, norm)
+    norm === :bohren && return 1/2
+    norm === :wiscombe && return 1
+
+    n = 1:length(a)
+    cn = 2.0*n .+ 1.0
+    qext = 2*sum(@.(cn*(real(a) + real(b)))) / x^2
+
+    (norm === :a || norm === :albedo) && return √(π*x^2*qext)
+
+    qsca = 2 * sum(@.(abs2(a) + abs2(b))) / x^2
+
+    (norm === :one || norm === :unity) && return √(qsca*π*x^2)
+
+    norm === :four_pi && return √(qsca*x^2/4)
+
+    (norm === :qsca || norm === :scattering_efficiency) && return √(π*x^2)
+
+    (norm === :qext || norm === :extinction_efficiency) && return √(qsca*π*x^2/qext)
+
+    throw(DomainError("Normalization must be one of :albedo (default), :one, :four_pi, :qext, :qsca, :bohren or :wiscombe"))
+end
+
+function mie_S1_S2(m, x, μ, norm=:albedo)
+    a, b = mie_An_Bn(m, x)
+
+    nangles = length(μ)
+    S1 = zeros(ComplexF64, nangles)
+    S2 = zeros(ComplexF64, nangles)
+
+    nstop = length(a)
+    for k=1:nangles
+        pi_nm2 = 0.0
+        pi_nm1 = 1.0
+        for n=1:nstop
+            τ_nm1 = n*μ[k]*pi_nm1-(n+1)*pi_nm2
+            S1[k] += (2*n+1)*(pi_nm1*a[n]+τ_nm1*b[n])/(n+1)/n
+            S2[k] += (2*n+1)*(τ_nm1*a[n]+pi_nm1*b[n])/(n+1)/n
+            temp = pi_nm1
+            pi_nm1 = ((2*n+1)*μ[k]*pi_nm1-(n+1)*pi_nm2)/n
+            pi_nm2 = temp
+        end
+    end
+
+    normalization = normalization_factor(a, b, x, norm)
+
+    S1 /= normalization
+    S2 /= normalization
+
+    return S1, S2
+end
