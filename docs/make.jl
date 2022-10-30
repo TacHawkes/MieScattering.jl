@@ -9,7 +9,7 @@ makedocs(modules = [MieScattering],
                                   prettyurls = get(ENV, "CI", "false") == "true",
                                   assets = String[]),
          pages = [
-             "Introduction => "index.md",
+             "Introduction" => "index.md",
          ])
 
 deploydocs(repo = "github.com/TacHawkes/MieScattering.jl.git")

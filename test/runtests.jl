@@ -276,4 +276,42 @@ using Test
         @test qext ≈ 0.000348 atol=1e-6
         @test g ≈ -0.397262 atol=1e-4
    end
+
+   @testset "Notebook" begin
+        N = 500
+        m = 1.5
+        x = LinRange(0.1, 20, N)
+        qext, qsca, qback, g = mie(m, x)
+
+        @test qsca[1] ≈ 2.3084093592198083e-05 atol=1e-6
+        @test qsca[101] ≈ 4.105960809066763 atol=1e-6
+        @test qsca[201] ≈ 1.9947867190110644 atol=1e-6
+        @test qsca[301] ≈ 2.4652591512196405 atol=1e-6
+        @test qsca[401] ≈ 2.472171798724846 atol=1e-6
+        @test qsca[500] ≈ 2.03583698038088 atol=1e-6
+
+        N = 500
+        m = 1.5
+        ρ = LinRange(0.1, 20, N)
+        x15 = ρ/2/(m-1)
+        qext, scal5, qback, g = mie(m, x15)
+
+        m = 1.1
+        x11 = ρ/2/(m-1)
+        qext, scal1, qback, g = mie(m, x11)
+
+        @test scal1[1] ≈ 0.0006616369953521216 atol=1e-6
+        @test scal1[100] ≈ 3.449616595439377 atol=1e-6
+        @test scal1[200] ≈ 1.6837703285684387 atol=1e-6
+        @test scal1[300] ≈ 2.3167184401740495 atol=1e-6
+        @test scal1[400] ≈ 2.218210809017406 atol=1e-6
+        @test scal1[500] ≈ 1.876467571615533 atol=1e-6
+
+        @test scal5[1] ≈ 2.3084093592198083e-05 atol=1e-6
+        @test scal5[100] ≈ 4.07295075914037 atol=1e-6
+        @test scal5[200] ≈ 1.8857586341949146 atol=1e-6
+        @test scal5[300] ≈ 2.464763930426085 atol=1e-6
+        @test scal5[400] ≈ 2.430569030744473 atol=1e-6
+        @test scal5[500] ≈ 2.03583698038088 atol=1e-6
+   end
 end
