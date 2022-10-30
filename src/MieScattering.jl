@@ -1,5 +1,7 @@
 module MieScattering
 
-# Write your package code here.
+include("mie.jl")
+
+export mie
 
 end
