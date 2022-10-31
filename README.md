@@ -16,7 +16,7 @@ The test suite has been adapted as well, so the whole package is numerically tes
 Install the package using the package manager:
 
 ```julia
-] add https://github.com/TacHawkes/MieScattering.jl
+] add MieScattering
 ```
 
 ## Alternatives

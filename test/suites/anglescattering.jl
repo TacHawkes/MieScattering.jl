@@ -131,7 +131,7 @@ function test_mie_pase_matrix_basic()
 end
 
 function test_mie_phase_matrix_mu_scalar()
-    size(mie_phase_matrix(1.5, 2.0, 0.0)) == (4,4)
+    @test size(mie_phase_matrix(1.5, 2.0, 0.0)) == (4,4)
 end
 
 function  test_mie_phase_matrix_symmetry()
