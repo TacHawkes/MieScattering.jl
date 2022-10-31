@@ -119,9 +119,34 @@ function test_i_par_i_per_01()
     end
 end
 
+function test_mie_pase_matrix_basic()
+    m = 1.5 - im*1.5
+    x = 2
+    μ = LinRange(-1, 1, 1000)
+
+    p = mie_phase_matrix(m, x, μ)
+    p11 = i_unpolarized(m, x, μ)
+
+    @test all(x -> isapprox(x...),  zip(p[1,1,:], p11))
+end
+
+function test_mie_phase_matrix_mu_scalar()
+    size(mie_phase_matrix(1.5, 2.0, 0.0)) == (4,4)
+end
+
+function  test_mie_phase_matrix_symmetry()
+    p = mie_phase_matrix(1.5, 2.0, LinRange(-1, 1, 10))
+
+    @test all(x -> isapprox(x...),  zip(p[1,2,:], p[2,1,:]))
+    @test all(x -> isapprox(x...),  zip(p[3,4,:], -p[4,2,:]))
+end
+
 @testset "AngleScattering" begin
     test_12_scatter_function()
     test_13_unity_normalization()
     test_i_unpolarized_01()
     test_i_par_i_per_01()
+    test_mie_pase_matrix_basic()
+    test_mie_phase_matrix_mu_scalar()
+    test_mie_phase_matrix_symmetry()
 end

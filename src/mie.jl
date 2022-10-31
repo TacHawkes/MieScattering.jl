@@ -53,7 +53,7 @@ end
 function mie(
     m::AbstractVector{T},
     x::AbstractVector{V},
-    force_threads = false,
+    use_threads = true,
 ) where {T<:Number,V<:Number}
     mlen, xlen = length(m), length(x)
 
@@ -68,7 +68,7 @@ function mie(
     qback = Vector{O}(undef, len)
     g = Vector{O}(undef, len)
 
-    if force_threads || len > 50
+    if use_threads && len > 50
         Threads.@threads for i in eachindex(g)
             mm = mlen > 1 ? m[i] : first(m)
             xx = xlen > 1 ? x[i] : first(x)
@@ -381,4 +381,52 @@ function ez_intensities(m, d, λ0, μ, n_env = 1.0, norm = :albedo)
     ipar = abs2(s2)
     iper = abs2(s1)
     return ipar, iper
+end
+
+"""
+    mie_phase_matrix(m, x, μ; norm=:albedo)
+
+Calculate the phase scattering matrix.
+
+The units are sr^(-1.0).
+The phase scattering matrix is computed from the scattering amplitude
+functions, according to equations 5.2.105-6 in K. N. Liou (**2002**) -
+*An Introduction to Atmospheric Radiation*, Second Edition.
+
+# Parameters
+- `m`: the complex index of refraction of the sphere
+- `x`: the size parameter of the sphere
+- `μ`: the angles, cos(theta), at which to calculate the phase scattering matrix
+
+# Output
+- `p`: The phase scattering matrix [sr^(-1.0)]
+"""
+function mie_phase_matrix end
+
+function mie_phase_matrix(m, x, μ::AbstractVector; norm=:albedo)
+    s1, s2 = mie_S1_S2(m, x, μ; norm)
+
+    s1_star = conj(s1)
+    s2_star = conj(s2)
+
+    m1 = abs2.(s1)
+    m2 = abs2.(s2)
+    s21 = @. real(0.5 * (s1 * s2_star + s2 * s1_star))
+    d21 = @. real(-0.5im * (s1 * s2_star - s2 * s1_star))
+    phase = zeros(4, 4, length(μ))
+    phase[1, 1, :] .= 0.5*(m2 + m1)
+    phase[1, 2, :] .= 0.5*(m2 + m1)
+    phase[2, 1, :] .= @view phase[1, 2, :]
+    phase[2, 2, :] .= @view phase[1, 1, :]
+    phase[3, 3, :] .= s21
+    phase[2, 4, :] .= -d21
+    phase[3, 2, :] .= d21
+    phase[3, 3, :] .= s21
+
+    return phase
+end
+
+function mie_phase_matrix(m, x, μ::Number; norm=:albedo)
+    phase = mie_phase_matrix(m, x, [μ]; norm)
+    return reshape(phase, 4, 4)
 end
