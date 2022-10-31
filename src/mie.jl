@@ -87,6 +87,22 @@ end
 mie(m::Number, x::AbstractVector) = mie([m], x)
 mie(m::AbstractVector, x::Number) = mie(m, [x])
 
+"""
+    small_mie(m, x)
+
+Calculate the efficiencies for a small sphere.
+Typically used for small spheres where `x<0.1`
+
+# Parameters
+- `m`: the complex index of refraction of the sphere
+- `x`: the size parameter of the sphere
+
+# Output
+- `qext`: the total extinction efficiency
+- `qsca`: the scattering efficiency
+- `qback`: the backscatter efficiency
+- `g`: the average cosine of the scattering phase function
+    """
 function small_mie(m, x)
     m2 = m^2
     x2 = x^2
@@ -118,6 +134,23 @@ function small_mie(m, x)
     return qext, qsca, qback, g
 end
 
+"""
+    small_conducting_mie(m, x)
+
+Calculate the efficiencies for a small conducting spheres.
+Typically used for small conducting spheres where `x < 0.1` and
+`real(m) == 0`.
+
+# Parameters
+- `m`: the complex index of refraction of the sphere
+- `x`: the size parameter of the sphere
+
+# Output
+- `qext`: the total extinction efficiency
+- `qsca`: the scattering efficiency
+- `qback`: the backscatter efficiency
+- `g`: the average cosine of the scattering phase function
+"""
 function small_conducting_mie(m, x)
     ahat1 = (im * 2 / 3 * (1 - 0.2 * x^2)) / (1 - 0.5 * x^2 + im * 2 / 3 * x^3)
     bhat1 = (im * (x^2 - 10.0) / 30.0) / (1 + 0.5 * x^2 - im * x^3 / 3.0)
@@ -136,6 +169,20 @@ function small_conducting_mie(m, x)
     return qext, qsca, qback, g
 end
 
+"""
+    mie_An_Bn(m, x)
+
+Compute arrays of Mie coefficients A and B for a sphere.
+This estimates the size of the arrays based on Wiscombe's formula. The length
+of the arrays is chosen so that the error when the series are summed is around 1e-6.
+
+# Parameters
+- `m`: the complex index of refraction of the sphere
+- `x`: the size parameter of the sphere
+
+# Output
+- `An`, `Bn`: arrays of Mie coefficents
+"""
 function mie_An_Bn(m, x)
     nstop = floor(Int, x + 4.05 * x^0.33333 + 2.0) + 1
     a = zeros(ComplexF64, nstop - 1)
@@ -175,6 +222,19 @@ function mie_An_Bn(m, x)
     return a, b
 end
 
+"""
+    D_calc(m, x, N)
+
+Compute the logarithmic derivative using best method.
+
+# Parameters
+- `m`: the complex index of refraction of the sphere
+- `x`: the size parameter of the sphere
+- `N`: order of Ricatti-Bessel function
+
+# Output
+The values of the Ricatti-Bessel function for orders from 0 to N.
+"""
 function D_calc(m, x, N)
     n = real(m)
     κ = abs(imag(m))
@@ -189,6 +249,17 @@ function D_calc(m, x, N)
     return D
 end
 
+"""
+    D_upwards!(z, N, D)
+
+Compute the logarithmic derivative by upwards recurrence.
+
+# Parameters
+- `z`: function argument
+- `N`: order of Ricatti-Bessel function
+- `D`: gets filled with the Ricatti-Bessel function values for orders
+       from 0 to N for an argument z using the upwards recurrence relations.
+"""
 function D_upwards!(z, N, D)
     _exp = exp(-2im * z)
     D[1] = -1 / z + (1 - _exp) / ((1 - _exp) / z - im * (1 + _exp))
@@ -197,6 +268,17 @@ function D_upwards!(z, N, D)
     end
 end
 
+"""
+    D_downwards!(z, N, D)
+
+Compute the logarithmic derivative by downwards recurrence.
+
+# Parameters
+- `z`: function argument
+- `N`: order of Ricatti-Bessel function
+- `D`: gets filled with the Ricatti-Bessel function values for orders
+       from 0 to N for an argument z using the downwards recurrence relations.
+"""
 function D_downwards!(z, N, D)
     last_D = Lentz_Dn(z, N)
     for n = N:-1:2
@@ -205,6 +287,22 @@ function D_downwards!(z, N, D)
     end
 end
 
+"""
+    Lentz_Dn(z, N)
+
+Compute the logarithmic derivative of the Ricatti-Bessel function.
+
+# Parameters
+- `z`: function argument
+- `N`: order of Ricatti-Bessel function
+
+
+# Output
+
+This returns the Ricatti-Bessel function of order N with argument z
+using the continued fraction technique of Lentz, Appl. Opt., 15,
+668-671, (1976).
+"""
 function Lentz_Dn(z, N)
     zinv = 2.0 / z
     α = (N + 0.5) * zinv
@@ -226,6 +324,23 @@ function Lentz_Dn(z, N)
     return -N / z + runratio
 end
 
+"""
+    small_mie_conducting_S1_S2(m, x, μ)
+
+Calculate the scattering amplitudes for small conducting spheres.
+The spheres are small perfectly conducting (reflecting) spheres (`x<0.1`).
+The amplitude functions have been normalized so that when integrated
+over all `4𝜋` solid angles, the integral will be qext(`𝜋x²`).
+The units are weird, ``sr^{-0.5}``.
+
+# Parameters
+- `m`: the complex index of refraction of the sphere
+- `x`: the size parameter of the sphere
+- `µ`: the angles, cos(``θ``), to calculate scattering amplitudes
+
+# Output
+`S1`, `S2`: the scattering amplitudes at each angle µ [``sr^{-0.5}``]
+"""
 function small_mie_conducting_S1_S2(m, x, μ)
     ahat1 = 2im / 3 * (1 - 0.2 * x^2) / (1 - 0.5 * x^2 + 2im / 3 * x^3)
     bhat1 = 1im / 3 * (0.1 * x^2 - 1) / (1 + 0.5 * x^2 - 1im / 3 * x^3)
@@ -248,6 +363,20 @@ function small_mie_conducting_S1_S2(m, x, μ)
     return S1, S2
 end
 
+"""
+Calculate the scattering amplitude functions for small spheres (`x<0.1`).
+The amplitude functions have been normalized so that when integrated
+over all `4*π` solid angles, the integral will be `qext*pi*x^2`.
+The units are weird, ``sr^{-0.5}``
+
+# Parameters
+- `m`: the complex index of refraction of the sphere
+- `x`: the size parameter of the sphere
+- `µ`: the angles, cos(``θ``), to calculate scattering amplitudes
+
+# Output
+`S1`, `S2`: the scattering amplitudes at each angle µ [``sr^{-0.5}``]
+"""
 function small_mie_S1_S2(m, x, μ)
     m2 = m^2
     m4 = m2^2
@@ -277,6 +406,20 @@ function small_mie_S1_S2(m, x, μ)
     return S1, S2
 end
 
+"""
+    normalization_factor(a, b, x; norm)
+
+Figure out scattering function normalization.
+
+# Parameters
+- `a`: complex array of An coefficients
+- `b`: complex array of Bn coefficients
+- `x`: dimensionless sphere size
+- `norm`: symbol describing type of normalization
+
+# Output
+scaling factor needed for scattering function
+"""
 function normalization_factor(a, b, x; norm)
     norm === :bohren && return 1 / 2
     norm === :wiscombe && return 1.0
@@ -305,6 +448,20 @@ function normalization_factor(a, b, x; norm)
     )
 end
 
+"""
+Calculate the scattering amplitude functions for spheres.
+The amplitude functions have been normalized so that when integrated
+over all `4*π` solid angles, the integral will be `qext*pi*x^2`.
+The units are weird, ``sr^{-0.5}``.
+
+# Parameters
+- `m`: the complex index of refraction of the sphere
+- `x`: the size parameter of the sphere
+- `µ`: the angles, cos(``θ``), to calculate scattering amplitudes
+
+# Output
+`S1`, `S2`: the scattering amplitudes at each angle µ [``sr^{-0.5}``]
+"""
 function mie_S1_S2(m, x, μ; norm = :albedo)
     a, b = mie_An_Bn(m, x)
 
@@ -336,6 +493,27 @@ function mie_S1_S2(m, x, μ; norm = :albedo)
     return S1, S2
 end
 
+"""
+    mie_cdf(m, x, num; norm = :albedo)
+
+Create a CDF for unpolarized scattering uniformly spaced in cos(θ).
+The CDF covers scattered (exit) angles ranging from 180 to 0 degrees.
+(The cosines are uniformly distributed over -1 to 1.) Because the angles
+are uniformly distributed in cos(theta), the scattering function is not
+sampled uniformly and therefore huge array sizes are needed to adequately
+sample highly anisotropic phase functions.
+Since this is a cumulative distribution function, the maximum value
+should be 1.
+
+# Parameters
+- `m`: the complex index of refraction of the sphere
+- `x`: the size parameter of the sphere
+- `num`: length of desired CDF array
+
+# Output
+- `µ`: array of cosines of angles
+- `cdf`: array of cumulative distribution function values
+"""
 function mie_cdf(m, x, num; norm = :albedo)
     μ = LinRange(-1, 1, num)
     s1, s2 = mie_S1_S2(m, x, μ; norm)
@@ -352,27 +530,116 @@ function mie_cdf(m, x, num; norm = :albedo)
     return μ, cdf
 end
 
+"""
+    i_per(m, x, μ; norm = :albedo)
+
+Return the scattered intensity in a plane normal to the incident light.
+This is the scattered intensity in a plane that is perpendicular to the
+field of the incident plane wave. The intensity is normalized such
+that the integral of the unpolarized intensity over 4π steradians
+is equal to the single scattering albedo.
+
+# Parameters
+- `m`: the complex index of refraction of the sphere
+- `x`: the size parameter of the sphere
+- `µ`: the angles, cos(theta), to calculate intensities
+
+# Output
+The intensity at each angle in the array µ.  Units [1/sr]
+"""
 function i_per(m, x, μ; norm = :albedo)
     s1, _ = mie_S1_S2(m, x, μ; norm)
     return abs2.(s1)
 end
 
+"""
+    i_par(m, x, μ; norm = :albedo)
+
+Return the scattered intensity in a plane parallel to the incident light.
+This is the scattered intensity in a plane that is perpendicular to the
+field of the incident plane wave. The intensity is normalized such
+that the integral of the unpolarized intensity over 4π steradians
+is equal to the single scattering albedo.
+
+# Parameters
+- `m`: the complex index of refraction of the sphere
+- `x`: the size parameter of the sphere
+- `µ`: the angles, cos(theta), to calculate intensities
+
+# Output
+The intensity at each angle in the array µ.  Units [1/sr]
+"""
 function i_par(m, x, μ; norm = :albedo)
     _, s2 = mie_S1_S2(m, x, μ; norm)
     return abs2.(s2)
 end
 
+"""
+    i_unpolarized(m, x, μ; norm = :albedo)
+
+Return the unpolarized scattered intensity at specified angles.
+This is the average value for randomly polarized incident light.
+The intensity is normalized such
+that the integral of the unpolarized intensity over 4π steradians
+is equal to the single scattering albedo.
+
+# Parameters
+- `m`: the complex index of refraction of the sphere
+- `x`: the size parameter of the sphere
+- `µ`: the angles, cos(theta), to calculate intensities
+
+# Output
+The intensity at each angle in the array µ.  Units [1/sr]
+    """
 function i_unpolarized(m, x, μ; norm = :albedo)
     s1, s2 = mie_S1_S2(m, x, μ; norm)
     return @. (abs2(s1) + abs2(s2)) / 2
 end
 
+"""
+    ez_mie(m, d, λ0, n_env = 1.0)
+
+Calculate the efficiencies of a sphere.
+
+# Parameters
+- `m`: the complex index of refraction of the sphere    [-]
+- `d`: the diameter of the sphere                       [same units as lambda0]
+- `λ0`: wavelength in a vacuum                          [same units as d]
+- `n_env`: real index of medium around sphere, optional.
+
+# Output
+- `qext`: the total extinction efficiency                  [-]
+- `qsca`: the scattering efficiency                        [-]
+- `qback`: the backscatter efficiency                      [-]
+- `g`: the average cosine of the scattering phase function [-]
+"""
 function ez_mie(m, d, λ0, n_env = 1.0)
     m_env = @. m / n_env
     x_env = @. π * d / (λ0 / n_env)
     return mie(m_env, x_env)
 end
 
+"""
+    ez_intensities(m, d, λ0, μ, n_env = 1.0, norm = :albedo)
+
+Return the scattered intensities from a sphere.
+These are the scattered intensities in a plane that is parallel (ipar) and
+perpendicular (iper) to the field of the incident plane wave.
+The scattered intensity is normalized such that the integral of the
+unpolarized intensity over 4𝜋 steradians is equal to the single scattering
+albedo.  The scattered intensity has units of inverse steradians [1/sr].
+The unpolarized scattering is the average of the two scattered intensities.
+
+# Parameters
+- `m`: the complex index of refraction of the sphere    [-]
+- `d`: the diameter of the sphere                       [same units as lambda0]
+- `λ0`: wavelength in a vacuum                          [same units as d]
+- `µ`: the cos(θ) of each direction desired             [-]
+- `n_env`: real index of medium around sphere, optional.
+
+# Output
+`ipar`, `iper`: scattered intensity in parallel and perpendicular planes [1/sr]
+"""
 function ez_intensities(m, d, λ0, μ, n_env = 1.0, norm = :albedo)
     m_env = m / n_env
     λ_env = λ0 / n_env
@@ -388,7 +655,7 @@ end
 
 Calculate the phase scattering matrix.
 
-The units are sr^(-1.0).
+The units are ``sr^{-1}``.
 The phase scattering matrix is computed from the scattering amplitude
 functions, according to equations 5.2.105-6 in K. N. Liou (**2002**) -
 *An Introduction to Atmospheric Radiation*, Second Edition.
@@ -399,7 +666,7 @@ functions, according to equations 5.2.105-6 in K. N. Liou (**2002**) -
 - `μ`: the angles, cos(theta), at which to calculate the phase scattering matrix
 
 # Output
-- `p`: The phase scattering matrix [sr^(-1.0)]
+- `p`: The phase scattering matrix [``sr^{-1}``]
 """
 function mie_phase_matrix end
 
