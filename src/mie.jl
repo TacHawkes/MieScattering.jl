@@ -1,7 +1,7 @@
 """
     mie(m, x)
 
-Calculate the efficiencies for a sphere where m or x may be arrays.
+Calculate the efficiencies for a sphere where m or x may be vectors.
 
 # Parameters
 - `m`: the complex index of refraction of the sphere
@@ -11,7 +11,7 @@ Calculate the efficiencies for a sphere where m or x may be arrays.
 - `qext`: the total extinction efficiency
 - `qsca`: the scattering efficiency
 - `qback`: the backscatter efficiency
-- `g: the average cosine of the scattering phase function
+- `g`: the average cosine of the scattering phase function
 """
 function mie end
 
@@ -332,4 +332,51 @@ function mie_S1_S2(m, x, μ, norm = :albedo)
     S2 /= normalization
 
     return S1, S2
+end
+
+function mie_cdf(m, x, num, norm=:albedo)
+    μ = LinRange(-1, 1, num)
+    s1, s2 = mie_S1_S2(m, x, μ, norm)
+
+    s = (abs2(s1) + abs2(s2))/2
+
+    cdf = zeros(num)
+    total = 0.0
+    for i=1:num
+        total += s[i]*2*π*2/num
+        cdf[i] = total
+    end
+
+    return μ, cdf
+end
+
+function i_per(m, x, μ, norm=:albedo)
+    s1, _ = mie_S1_S2(m, x, μ, norm)
+    return abs2(s1)
+end
+
+function i_par(m, x, μ, norm=:albedo)
+    _, s2 = mie_S1_S2(m, x, μ, norm)
+    return abs2(s2)
+end
+
+function i_unpolarized(m, x, μ, norm=:albedo)
+    s1, s2 = mie_S1_S2(m, x, μ, norm)
+    return (abs2(s1) + abs2(s2)) / 2
+end
+
+function ez_mie(m, d, λ0, n_env=1.0)
+    m_env = @. m / n_env
+    x_env = @. π*d/(λ0 / n_env)
+    return mie(m_env, x_env)
+end
+
+function ez_intensities(m, d, λ0, μ, n_env=1.0, norm=:albedo)
+    m_env = m / n_env
+    λ_env = λ0 / n_env
+    x_env = π * d / λ_env
+    s1, s2 = mie_S1_S2(m_env, x_env, μ, norm)
+    ipar = abs2(s2)
+    iper = abs2(s1)
+    return ipar, iper
 end

@@ -1,4 +1,4 @@
-using MieScattering, GLMakie
+using MieScattering, GLMakie, BenchmarkTools
 
 num = 100
 radius = 0.5 # in microns

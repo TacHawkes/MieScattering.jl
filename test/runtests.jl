@@ -360,5 +360,36 @@ using Test
         @test scal5[300] ≈ 2.464763930426085 atol=1e-6
         @test scal5[400] ≈ 2.430569030744473 atol=1e-6
         @test scal5[500] ≈ 2.03583698038088 atol=1e-6
+
+        N = 500
+        m = 1.0
+        r = 500 # nm
+        λ0 = LinRange(300, 800, N)
+
+        mwater = 4/3
+        mm = m / mwater
+        xx = 2π*r*mwater ./ λ0
+
+        qext, qsca, qback, g = mie(mm, xx)
+
+        @test qsca[1] ≈ 1.5525047718022498 atol=1e-6
+        @test qsca[100] ≈ 2.1459528526672678 atol=1e-6
+        @test qsca[200] ≈ 2.365171370327149 atol=1e-6
+        @test qsca[300] ≈ 2.2039860928542128 atol=1e-6
+        @test qsca[400] ≈ 1.9261758931397088 atol=1e-6
+        @test qsca[500] ≈ 1.640006561518987 atol=1e-6
+
+        m_sphere = 1.0
+        n_water = 4/3
+        d = 1000
+        λ0 = LinRange(300, 800, 50)
+        qext, qsca, qback, g = ez_mie(m_sphere, d, λ0, n_water)
+
+        @test qsca[1] ≈ 1.5525047718022498 atol=1e-6
+        @test qsca[10] ≈ 2.107970892634116 atol=1e-6
+        @test qsca[20] ≈ 2.3654333205160074 atol=1e-6
+        @test qsca[30] ≈ 2.213262310704816 atol=1e-6
+        @test qsca[40] ≈ 1.9314911518355427 atol=1e-6
+        @test qsca[50] ≈ 1.640006561518987 atol=1e-6
    end
 end
