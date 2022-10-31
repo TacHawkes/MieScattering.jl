@@ -111,10 +111,10 @@ function test_i_par_i_per_01()
     expected = [qsca / qext, 1.0, 4π, qsca, qext, qsca * 4 * π * x^2, qsca * π * x^2]
     for (i, norm) in enumerate([:albedo, :one, :four_pi, :qsca, :qext, :bohren, :wiscombe])
         iper = i_per(m, x, μ; norm)
-        total1 = 2π*(μ[2] - μ[1])*sum(iper)
+        total1 = 2π * (μ[2] - μ[1]) * sum(iper)
         ipar = i_par(m, x, μ; norm)
-        total2 = 2π*(μ[2] - μ[1])*sum(ipar)
-        total = (total1 + total2)/2
+        total2 = 2π * (μ[2] - μ[1]) * sum(ipar)
+        total = (total1 + total2) / 2
         @test total / expected[i] ≈ 1.0 atol = 5e-3
     end
 end
