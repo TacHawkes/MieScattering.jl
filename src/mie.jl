@@ -277,9 +277,9 @@ function small_mie_S1_S2(m, x, μ)
     return S1, S2
 end
 
-function normalization_factor(a, b, x, norm)
+function normalization_factor(a, b, x; norm)
     norm === :bohren && return 1 / 2
-    norm === :wiscombe && return 1
+    norm === :wiscombe && return 1.0
 
     n = 1:length(a)
     cn = 2.0 * n .+ 1.0
@@ -287,7 +287,7 @@ function normalization_factor(a, b, x, norm)
 
     (norm === :a || norm === :albedo) && return √(π * x^2 * qext)
 
-    qsca = 2 * sum(@.(abs2(a) + abs2(b))) / x^2
+    qsca = 2 * sum(@. cn * (abs2(a) + abs2(b))) / x^2
 
     (norm === :one || norm === :unity) && return √(qsca * π * x^2)
 
@@ -300,12 +300,12 @@ function normalization_factor(a, b, x, norm)
     throw(
         DomainError(
             "Normalization must be one of :albedo (default), :one, :four_pi, :qext,
-            :qsca, :bohren or :wiscombe"
-        )
+            :qsca, :bohren or :wiscombe",
+        ),
     )
 end
 
-function mie_S1_S2(m, x, μ, norm = :albedo)
+function mie_S1_S2(m, x, μ; norm = :albedo)
     a, b = mie_An_Bn(m, x)
 
     nangles = length(μ)
@@ -313,20 +313,22 @@ function mie_S1_S2(m, x, μ, norm = :albedo)
     S2 = zeros(ComplexF64, nangles)
 
     nstop = length(a)
-    Threads.@threads for k = 1:nangles
-        pi_nm2 = 0.0
-        pi_nm1 = 1.0
-        for n = 1:nstop
-            τ_nm1 = n * μ[k] * pi_nm1 - (n + 1) * pi_nm2
-            S1[k] += (2 * n + 1) * (pi_nm1 * a[n] + τ_nm1 * b[n]) / (n + 1) / n
-            S2[k] += (2 * n + 1) * (τ_nm1 * a[n] + pi_nm1 * b[n]) / (n + 1) / n
-            temp = pi_nm1
-            pi_nm1 = ((2 * n + 1) * μ[k] * pi_nm1 - (n + 1) * pi_nm2) / n
-            pi_nm2 = temp
+    let S1 = S1, S2 = S2
+        Threads.@threads for k = 1:nangles
+            pi_nm2 = 0.0
+            pi_nm1 = 1.0
+            for n = 1:nstop
+                τ_nm1 = n * μ[k] * pi_nm1 - (n + 1) * pi_nm2
+                S1[k] += (2 * n + 1) * (pi_nm1 * a[n] + τ_nm1 * b[n]) / (n + 1) / n
+                S2[k] += (2 * n + 1) * (τ_nm1 * a[n] + pi_nm1 * b[n]) / (n + 1) / n
+                temp = pi_nm1
+                pi_nm1 = ((2 * n + 1) * μ[k] * pi_nm1 - (n + 1) * pi_nm2) / n
+                pi_nm2 = temp
+            end
         end
     end
 
-    normalization = normalization_factor(a, b, x, norm)
+    normalization = normalization_factor(a, b, x; norm)
 
     S1 /= normalization
     S2 /= normalization
@@ -334,44 +336,44 @@ function mie_S1_S2(m, x, μ, norm = :albedo)
     return S1, S2
 end
 
-function mie_cdf(m, x, num, norm=:albedo)
+function mie_cdf(m, x, num; norm = :albedo)
     μ = LinRange(-1, 1, num)
-    s1, s2 = mie_S1_S2(m, x, μ, norm)
+    s1, s2 = mie_S1_S2(m, x, μ; norm)
 
-    s = (abs2(s1) + abs2(s2))/2
+    s = (abs2(s1) + abs2(s2)) / 2
 
     cdf = zeros(num)
     total = 0.0
-    for i=1:num
-        total += s[i]*2*π*2/num
+    for i = 1:num
+        total += s[i] * 2 * π * 2 / num
         cdf[i] = total
     end
 
     return μ, cdf
 end
 
-function i_per(m, x, μ, norm=:albedo)
-    s1, _ = mie_S1_S2(m, x, μ, norm)
-    return abs2(s1)
+function i_per(m, x, μ; norm = :albedo)
+    s1, _ = mie_S1_S2(m, x, μ; norm)
+    return abs2.(s1)
 end
 
-function i_par(m, x, μ, norm=:albedo)
-    _, s2 = mie_S1_S2(m, x, μ, norm)
-    return abs2(s2)
+function i_par(m, x, μ; norm = :albedo)
+    _, s2 = mie_S1_S2(m, x, μ; norm)
+    return abs2.(s2)
 end
 
-function i_unpolarized(m, x, μ, norm=:albedo)
-    s1, s2 = mie_S1_S2(m, x, μ, norm)
-    return (abs2(s1) + abs2(s2)) / 2
+function i_unpolarized(m, x, μ; norm = :albedo)
+    s1, s2 = mie_S1_S2(m, x, μ; norm)
+    return @. (abs2(s1) + abs2(s2)) / 2
 end
 
-function ez_mie(m, d, λ0, n_env=1.0)
+function ez_mie(m, d, λ0, n_env = 1.0)
     m_env = @. m / n_env
-    x_env = @. π*d/(λ0 / n_env)
+    x_env = @. π * d / (λ0 / n_env)
     return mie(m_env, x_env)
 end
 
-function ez_intensities(m, d, λ0, μ, n_env=1.0, norm=:albedo)
+function ez_intensities(m, d, λ0, μ, n_env = 1.0, norm = :albedo)
     m_env = m / n_env
     λ_env = λ0 / n_env
     x_env = π * d / λ_env
