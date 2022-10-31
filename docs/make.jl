@@ -10,6 +10,7 @@ makedocs(modules = [MieScattering],
                                   assets = String[]),
          pages = [
              "Introduction" => "index.md",
+             "API" => "api.md"
          ])
 
 deploydocs(repo = "github.com/TacHawkes/MieScattering.jl.git")

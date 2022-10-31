@@ -24,4 +24,4 @@ Install the package using the package manager:
 This is not the first Julia package for calculating Mie scattering. The whole purpose of this package is to have all features of `miepython` without having to call Python from Julia.
 
 - [JLMie](https://github.com/Hinamoooon/jlmie)
-- [MieScatter] (https://github.com/dronir/MieScatter.jl)
+- [MieScatter](https://github.com/dronir/MieScatter.jl)
