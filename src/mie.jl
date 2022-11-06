@@ -462,13 +462,14 @@ function mie_S1_S2(m, x, μ; norm = :albedo)
     a, b = mie_An_Bn(m, x)
 
     nangles = length(μ)
-    S1 = zeros(ComplexF64, nangles)
-    S2 = zeros(ComplexF64, nangles)
+    S1 = Vector{ComplexF64}(undef, nangles)
+    S2 = Vector{ComplexF64}(undef, nangles)
 
     nstop = length(a)
     for k = 1:nangles
         pi_nm2 = 0.0
         pi_nm1 = 1.0
+        S1[k], S1[k] = zero(eltype(S1)), zero(eltype(S2))
         @inbounds for n = 1:nstop
             τ_nm1 = n * μ[k] * pi_nm1 - (n + 1) * pi_nm2
             S1[k] += (2 * n + 1) * (pi_nm1 * a[n] + τ_nm1 * b[n]) / (n + 1) / n
@@ -481,8 +482,8 @@ function mie_S1_S2(m, x, μ; norm = :albedo)
 
     normalization = normalization_factor(a, b, x; norm)
 
-    S1 /= normalization
-    S2 /= normalization
+    S1 ./= normalization
+    S2 ./= normalization
 
     return S1, S2
 end
