@@ -196,7 +196,7 @@ function mie_An_Bn(m, x)
     if real(m) > 0.0
         D = D_calc(m, x, nstop + 1)
 
-        for n = 1:(nstop-1)
+        @inbounds for n = 1:(nstop-1)
             temp = D[n] / m + n / x
             a[n] = (temp * psi_n - psi_nm1) / (temp * xi_n - xi_nm1)
             temp = D[n] * m + n / x
@@ -208,7 +208,7 @@ function mie_An_Bn(m, x)
             psi_n = real(xi_n)
         end
     else
-        for n = 1:(nstop-1)
+        @inbounds for n = 1:(nstop-1)
             a[n] = (n * psi_n / x - psi_nm1) / (n * xi_n / x - xi_nm1)
             b[n] = psi_n / xi_n
             xi = (2 * n + 1) * xi_n / x - xi_nm1
@@ -470,18 +470,16 @@ function mie_S1_S2(m, x, μ; norm = :albedo)
     S2 = zeros(ComplexF64, nangles)
 
     nstop = length(a)
-    let S1 = S1, S2 = S2
-        Threads.@threads for k = 1:nangles
-            pi_nm2 = 0.0
-            pi_nm1 = 1.0
-            for n = 1:nstop
-                τ_nm1 = n * μ[k] * pi_nm1 - (n + 1) * pi_nm2
-                S1[k] += (2 * n + 1) * (pi_nm1 * a[n] + τ_nm1 * b[n]) / (n + 1) / n
-                S2[k] += (2 * n + 1) * (τ_nm1 * a[n] + pi_nm1 * b[n]) / (n + 1) / n
-                temp = pi_nm1
-                pi_nm1 = ((2 * n + 1) * μ[k] * pi_nm1 - (n + 1) * pi_nm2) / n
-                pi_nm2 = temp
-            end
+    for k = 1:nangles
+        pi_nm2 = 0.0
+        pi_nm1 = 1.0
+        @inbounds for n = 1:nstop
+            τ_nm1 = n * μ[k] * pi_nm1 - (n + 1) * pi_nm2
+            S1[k] += (2 * n + 1) * (pi_nm1 * a[n] + τ_nm1 * b[n]) / (n + 1) / n
+            S2[k] += (2 * n + 1) * (τ_nm1 * a[n] + pi_nm1 * b[n]) / (n + 1) / n
+            temp = pi_nm1
+            pi_nm1 = ((2 * n + 1) * μ[k] * pi_nm1 - (n + 1) * pi_nm2) / n
+            pi_nm2 = temp
         end
     end
 
@@ -670,30 +668,31 @@ functions, according to equations 5.2.105-6 in K. N. Liou (**2002**) -
 """
 function mie_phase_matrix end
 
-function mie_phase_matrix(m, x, μ::AbstractVector; norm=:albedo)
+function mie_phase_matrix(m, x, μ::AbstractVector; norm = :albedo)
     s1, s2 = mie_S1_S2(m, x, μ; norm)
 
-    s1_star = conj(s1)
-    s2_star = conj(s2)
-
-    m1 = abs2.(s1)
-    m2 = abs2.(s2)
-    s21 = @. real(0.5 * (s1 * s2_star + s2 * s1_star))
-    d21 = @. real(-0.5im * (s1 * s2_star - s2 * s1_star))
     phase = zeros(4, 4, length(μ))
-    phase[1, 1, :] .= 0.5*(m2 + m1)
-    phase[1, 2, :] .= 0.5*(m2 + m1)
-    phase[2, 1, :] .= @view phase[1, 2, :]
-    phase[2, 2, :] .= @view phase[1, 1, :]
-    phase[3, 3, :] .= s21
-    phase[2, 4, :] .= -d21
-    phase[3, 2, :] .= d21
-    phase[3, 3, :] .= s21
+    for i in eachindex(s1)
+        s1_star = conj(s1[i])
+        s2_star = conj(s2[i])
+
+        m1 = abs2(s1[i])
+        m2 = abs2(s2[i])
+        s21 = real(0.5 * (s1[i] * s2_star + s2[i] * s1_star))
+        d21 = real(-0.5 * (s1[i] * s2_star - s2[i] * s1_star))
+
+        phase[1, 1, i] = 0.5 * (m2 + m1)
+        phase[1, 2, i] = 0.5 * (m2 + m1)
+        phase[2, 1, i] = phase[1, 2, i]
+        phase[2, 2, i] = phase[1, 1, i]
+        phase[3, 3, i] = s21
+        phase[2, 4, i] = -d21
+        phase[3, 2, i] = d21
+        phase[3, 3, i] = s21
+    end
 
     return phase
 end
 
-function mie_phase_matrix(m, x, μ::Number; norm=:albedo)
-    phase = mie_phase_matrix(m, x, [μ]; norm)
-    return reshape(phase, 4, 4)
-end
+mie_phase_matrix(m, x, μ::Number; norm = :albedo) =
+    reshape(mie_phase_matrix(m, x, [µ]; norm), 4, 4)
