@@ -34,7 +34,7 @@ function mie(m::T, x::V) where {T<:Number,V<:Number}
             qsca = 2 * sum(i -> (2i + 1) * (abs2(a[i]) + abs2(b[i])), n) / x^2
         end
 
-        qback = abs(sum(i -> (-1)^i * ((2i + 1)) * (a[i] - b[i]), n))^2 / x^2
+        qback = abs2(sum(i -> (-1)^i * ((2i + 1)) * (a[i] - b[i]), n)) / x^2
 
         g = zero(TT)
         for i = 1:(nmax-1)
@@ -47,9 +47,21 @@ function mie(m::T, x::V) where {T<:Number,V<:Number}
     return qext, qsca, qback, g
 end
 
+"""
+Helper struct for performant vector calculation of the mie scattering. It implements the
+minimum interface to behave as an AbstractVector subtype.
+"""
+struct ConstantVector{T} <: AbstractVector{T}
+    val::T
+    size::Int
+end
+Base.size(v::ConstantVector) = (v.size,)
+Base.getindex(v::ConstantVector, ::Any) = v.val
+Base.setindex!(::ConstantVector, val, ::Any) = nothing
+
 function mie(
     m::AbstractVector{T},
-    x::AbstractVector{V},
+    x::AbstractVector{V};
     use_threads = true,
 ) where {T<:Number,V<:Number}
     mlen, xlen = length(m), length(x)
@@ -67,22 +79,18 @@ function mie(
 
     if use_threads && len > 50
         Threads.@threads for i in eachindex(g)
-            mm = mlen > 1 ? m[i] : first(m)
-            xx = xlen > 1 ? x[i] : first(x)
-            qext[i], qsca[i], qback[i], g[i] = mie(mm, xx)
+            qext[i], qsca[i], qback[i], g[i] = mie(m[i], x[i])
         end
     else
         for i in eachindex(g)
-            mm = mlen > 1 ? m[i] : first(m)
-            xx = xlen > 1 ? x[i] : first(x)
-            qext[i], qsca[i], qback[i], g[i] = mie(mm, xx)
+            qext[i], qsca[i], qback[i], g[i] = mie(m[i], x[i])
         end
     end
 
     return qext, qsca, qback, g
 end
-mie(m::Number, x::AbstractVector) = mie([m], x)
-mie(m::AbstractVector, x::Number) = mie(m, [x])
+mie(m::Number, x::AbstractVector) = mie(ConstantVector(m, length(x)), x)
+mie(m::AbstractVector, x::Number) = mie(m, ConstantVector(x, length(m)))
 
 """
     small_mie(m, x)
@@ -182,8 +190,8 @@ of the arrays is chosen so that the error when the series are summed is around 1
 """
 function mie_An_Bn(m, x)
     nstop = floor(Int, x + 4.05 * x^0.33333 + 2.0) + 1
-    a = zeros(ComplexF64, nstop - 1)
-    b = zeros(ComplexF64, nstop - 1)
+    a = Vector{ComplexF64}(undef, nstop - 1)
+    b = Vector{ComplexF64}(undef, nstop - 1)
 
     psi_nm1 = sin(x)
     psi_n = psi_nm1 / x - cos(x)
@@ -235,7 +243,7 @@ The values of the Ricatti-Bessel function for orders from 0 to N.
 function D_calc(m, x, N)
     n = real(m)
     κ = abs(imag(m))
-    D = zeros(ComplexF64, N)
+    D = Vector{ComplexF64}(undef, N)
 
     if n < 1 || n > 10 || κ > 10 || (x * κ) >= (3.9 - 10.8 * n + 13.78 * n^2)
         D_downwards!(m * x, N, D)
@@ -259,8 +267,8 @@ Compute the logarithmic derivative by upwards recurrence.
 """
 function D_upwards!(z, N, D)
     _exp = exp(-2im * z)
-    D[1] = -1 / z + (1 - _exp) / ((1 - _exp) / z - im * (1 + _exp))
-    for n = 2:N
+    @inbounds D[1] = -1 / z + (1 - _exp) / ((1 - _exp) / z - im * (1 + _exp))
+    @inbounds for n = 2:N
         D[n] = 1 / (n / z - D[n-1]) - n / z
     end
 end
@@ -278,7 +286,7 @@ Compute the logarithmic derivative by downwards recurrence.
 """
 function D_downwards!(z, N, D)
     last_D = Lentz_Dn(z, N)
-    for n = N:-1:2
+    @inbounds for n = N:-1:2
         last_D = n / z - 1.0 / (last_D + n / z)
         D[n-1] = last_D
     end
