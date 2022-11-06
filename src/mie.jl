@@ -81,8 +81,8 @@ function mie(
 
     return qext, qsca, qback, g
 end
-mie(m::Number, x::AbstractVector) = mie([m], x)
-mie(m::AbstractVector, x::Number) = mie(m, [x])
+mie(m::Number, x::AbstractVector; use_threads=true) = mie([m], x; use_threads)
+mie(m::AbstractVector, x::Number; use_threads=true) = mie(m, [x]; use_threads)
 
 """
     small_mie(m, x)
