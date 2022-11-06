@@ -19,6 +19,17 @@ Install the package using the package manager:
 ] add MieScattering
 ```
 
+## Usage example
+
+```julia
+using MieScattering
+
+m = 1.3179 - 0.000097313*im
+d = 0.2         # µm 
+λ0 = 1.064      # µm
+qext, qsca, qback, g = ez_mie(m, d, λ0)
+```
+
 ## Alternatives
 
 This is not the first Julia package for calculating Mie scattering. The whole purpose of this package is to have all features of `miepython` without having to call Python from Julia.

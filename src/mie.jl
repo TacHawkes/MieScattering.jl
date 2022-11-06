@@ -422,11 +422,11 @@ function normalization_factor(a, b, x; norm)
     norm === :wiscombe && return 1.0
 
     n = 1:length(a)
-    qext = 2 * sum(i->(2i+1) * (real(a[i]) + real(b[i])), n) / x^2
+    qext = 2 * sum(i -> (2i + 1) * (real(a[i]) + real(b[i])), n) / x^2
 
     (norm === :a || norm === :albedo) && return √(π * x^2 * qext)
 
-    qsca = 2 * sum(i-> (2i +1) * (abs2(a[i]) + abs2(b[i])), n) / x^2
+    qsca = 2 * sum(i -> (2i + 1) * (abs2(a[i]) + abs2(b[i])), n) / x^2
 
     (norm === :one || norm === :unity) && return √(qsca * π * x^2)
 
