@@ -47,18 +47,6 @@ function mie(m::T, x::V) where {T<:Number,V<:Number}
     return qext, qsca, qback, g
 end
 
-"""
-Helper struct for performant vector calculation of the mie scattering. It implements the
-minimum interface to behave as an AbstractVector subtype.
-"""
-struct ConstantVector{T} <: AbstractVector{T}
-    val::T
-    size::Int
-end
-Base.size(v::ConstantVector) = (v.size,)
-Base.getindex(v::ConstantVector, ::Any) = v.val
-Base.setindex!(::ConstantVector, val, ::Any) = nothing
-
 function mie(
     m::AbstractVector{T},
     x::AbstractVector{V};
@@ -79,18 +67,22 @@ function mie(
 
     if use_threads && len > 50
         Threads.@threads for i in eachindex(g)
-            qext[i], qsca[i], qback[i], g[i] = mie(m[i], x[i])
+            mm = mlen > 1 ? m[i] : first(m)
+            xx = xlen > 1 ? x[i] : first(x)
+            @inbounds qext[i], qsca[i], qback[i], g[i] = mie(mm, xx)
         end
     else
         for i in eachindex(g)
-            qext[i], qsca[i], qback[i], g[i] = mie(m[i], x[i])
+            mm = mlen > 1 ? m[i] : first(m)
+            xx = xlen > 1 ? x[i] : first(x)
+            @inbounds qext[i], qsca[i], qback[i], g[i] = mie(mm, xx)
         end
     end
 
     return qext, qsca, qback, g
 end
-mie(m::Number, x::AbstractVector) = mie(ConstantVector(m, length(x)), x)
-mie(m::AbstractVector, x::Number) = mie(m, ConstantVector(x, length(m)))
+mie(m::Number, x::AbstractVector) = mie([m], x)
+mie(m::AbstractVector, x::Number) = mie(m, [x])
 
 """
     small_mie(m, x)
