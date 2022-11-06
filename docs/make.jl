@@ -12,8 +12,8 @@ makedocs(
     ),
     pages = [
         "Introduction" => "index.md",
-        "API" => "api.md",
         "Performance" => "performance.md",
+        "API" => "api.md",
     ],
 )
 
