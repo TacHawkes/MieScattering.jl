@@ -26,23 +26,20 @@ function mie(m::T, x::V) where {T<:Number,V<:Number}
 
         nmax = length(a)
         n = 1:nmax
-        cn = 2.0 * n .+ 1.0
 
-        qext = 2 * sum(@.(cn * (real(a) + real(b)))) / x^2
+        qext = 2 * sum(i -> (2i + 1) * (real(a[i]) + real(b[i])), n) / x^2
         qsca = qext
 
         if imag(m) != zero(TT)
-            qsca = 2 * sum(@.(cn * (abs2(a) + abs2(b)))) / x^2
+            qsca = 2 * sum(i -> (2i + 1) * (abs2(a[i]) + abs2(b[i])), n) / x^2
         end
 
-        qback = abs(sum(@.((-1)^n * cn * (a - b))))^2 / x^2
+        qback = abs(sum(i -> (-1)^i * ((2i + 1)) * (a[i] - b[i]), n))^2 / x^2
 
-        c1n = @. n * (n + 2) / (n + 1)
-        c2n = @. cn / n / (n + 1)
         g = zero(TT)
         for i = 1:(nmax-1)
-            asy1 = c1n[i] * real(a[i] * conj(a[i+1]) + b[i] * conj(b[i+1]))
-            asy2 = c2n[i] * real(a[i] * conj(b[i]))
+            asy1 = (i * (i + 2) / (i + 1)) * real(a[i] * conj(a[i+1]) + b[i] * conj(b[i+1]))
+            asy2 = (2 * i + 1) / i / (i + 1) * real(a[i] * conj(b[i]))
             g += 4 * (asy1 + asy2) / qsca / x^2
         end
     end
@@ -425,12 +422,11 @@ function normalization_factor(a, b, x; norm)
     norm === :wiscombe && return 1.0
 
     n = 1:length(a)
-    cn = 2.0 * n .+ 1.0
-    qext = 2 * sum(@.(cn * (real(a) + real(b)))) / x^2
+    qext = 2 * sum(i->(2i+1) * (real(a[i]) + real(b[i])), n) / x^2
 
     (norm === :a || norm === :albedo) && return √(π * x^2 * qext)
 
-    qsca = 2 * sum(@. cn * (abs2(a) + abs2(b))) / x^2
+    qsca = 2 * sum(i-> (2i +1) * (abs2(a[i]) + abs2(b[i])), n) / x^2
 
     (norm === :one || norm === :unity) && return √(qsca * π * x^2)
 
