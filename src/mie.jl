@@ -50,7 +50,7 @@ end
 function mie(
     m::AbstractVector{T},
     x::AbstractVector{V};
-    use_threads = true,
+    use_threads = true
 ) where {T<:Number,V<:Number}
     mlen, xlen = length(m), length(x)
 
@@ -65,18 +65,10 @@ function mie(
     qback = Vector{O}(undef, len)
     g = Vector{O}(undef, len)
 
-    if use_threads && len > 50
-        Threads.@threads for i in eachindex(g)
-            mm = mlen > 1 ? m[i] : first(m)
-            xx = xlen > 1 ? x[i] : first(x)
-            @inbounds qext[i], qsca[i], qback[i], g[i] = mie(mm, xx)
-        end
-    else
-        for i in eachindex(g)
-            mm = mlen > 1 ? m[i] : first(m)
-            xx = xlen > 1 ? x[i] : first(x)
-            @inbounds qext[i], qsca[i], qback[i], g[i] = mie(mm, xx)
-        end
+    @batch minbatch=(use_threads ? 1 : typemax(Int)) for i in eachindex(g)
+        mm = mlen > 1 ? m[i] : first(m)
+        xx = xlen > 1 ? x[i] : first(x)
+        @inbounds qext[i], qsca[i], qback[i], g[i] = mie(mm, xx)
     end
 
     return qext, qsca, qback, g
@@ -193,7 +185,7 @@ function mie_An_Bn(m, x)
     if real(m) > 0.0
         D = D_calc(m, x, nstop + 1)
 
-        @inbounds for n = 1:(nstop-1)
+        for n = 1:(nstop-1)
             temp = D[n] / m + n / x
             a[n] = (temp * psi_n - psi_nm1) / (temp * xi_n - xi_nm1)
             temp = D[n] * m + n / x
@@ -205,7 +197,7 @@ function mie_An_Bn(m, x)
             psi_n = real(xi_n)
         end
     else
-        @inbounds for n = 1:(nstop-1)
+        for n = 1:(nstop-1)
             a[n] = (n * psi_n / x - psi_nm1) / (n * xi_n / x - xi_nm1)
             b[n] = psi_n / xi_n
             xi = (2 * n + 1) * xi_n / x - xi_nm1
@@ -454,11 +446,14 @@ The units are weird, ``sr^{-0.5}``.
 - `m`: the complex index of refraction of the sphere
 - `x`: the size parameter of the sphere
 - `µ`: the angles, cos(``θ``), to calculate scattering amplitudes
+- `norm` (optional): The normalization. Must be one of :albedo (default), :one, :four_pi, :qext,
+:qsca, :bohren or :wiscombe"
+- `use_threads` (optional): Flag whether to use threads (default: true)
 
 # Output
 `S1`, `S2`: the scattering amplitudes at each angle µ [``sr^{-0.5}``]
 """
-function mie_S1_S2(m, x, μ; norm = :albedo)
+function mie_S1_S2(m, x, μ; norm = :albedo, use_threads = true)
     a, b = mie_An_Bn(m, x)
 
     nangles = length(μ)
@@ -466,7 +461,7 @@ function mie_S1_S2(m, x, μ; norm = :albedo)
     S2 = Vector{ComplexF64}(undef, nangles)
 
     nstop = length(a)
-    for k = 1:nangles
+    @batch minbatch=(use_threads ? 1 : typemax(Int)) for k = 1:nangles
         pi_nm2 = 0.0
         pi_nm1 = 1.0
         S1[k], S2[k] = zero(eltype(S1)), zero(eltype(S2))
@@ -601,6 +596,7 @@ Calculate the efficiencies of a sphere.
 - `d`: the diameter of the sphere                       [same units as lambda0]
 - `λ0`: wavelength in a vacuum                          [same units as d]
 - `n_env`: real index of medium around sphere, optional.
+- `use_threads` (optional): Flag whether to use threads (default: true)
 
 # Output
 - `qext`: the total extinction efficiency                  [-]
@@ -608,10 +604,10 @@ Calculate the efficiencies of a sphere.
 - `qback`: the backscatter efficiency                      [-]
 - `g`: the average cosine of the scattering phase function [-]
 """
-function ez_mie(m, d, λ0, n_env = 1.0)
+function ez_mie(m, d, λ0, n_env = 1.0; use_threads=true)
     m_env = @. m / n_env
     x_env = @. π * d / (λ0 / n_env)
-    return mie(m_env, x_env)
+    return mie(m_env, x_env; use_threads)
 end
 
 """

@@ -40,6 +40,8 @@ Normalized Mie scattering intensities for angles µ=cos(θ):
 """
 module MieScattering
 
+using Polyester
+
 include("mie.jl")
 
 export  mie, mie_S1_S2, i_unpolarized, i_par, i_per,

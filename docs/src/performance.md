@@ -1,9 +1,9 @@
 # Performance in comparison to miepython
 
 The following snippets show how MieScattering.jl performs compared to miepython. The tests are performed by calling miepython using `PyCall`.
-This might seem as an unfair comparison due to the (little) overhead of calling Python from Julia. However, if you are reading this you already want to use Julia for this task so resorting to PyCall might be your way to go anyway if there would be no native Julia solution.
+This might seem as an unfair comparison due to the (little) overhead of calling Python from Julia. However, if you are reading this you already want to use Julia for this task so resorting to PyCall might be your way to go anyway if there is no native Julia solution.
 
-The performance is compared vs the jit-ed and non-jit-ed version. Additionally the Julia version is used with the parameter `use_threads=false`  for the `mie` function in order to show the difference when using multi-threading in Julia. Note that threading only kicks in for a vector length (either `m` or `x`) of at least 50 as otherwise the overhead of spawning threads will actually decrease the performance. This leads to the single/multi-threading curves to be coincident for lengths <  50.
+The performance is compared vs the jit-ed and non-jit-ed version. Additionally the Julia version is used with the parameter `use_threads=false`  in order to show the difference when using multi-threading in Julia (using the great package [Polyester.jl](https://github.com/JuliaSIMD/Polyester.jl)). Multi-threading is the default setting, even though there is a slight disadvantage for small workloads. Even in single-threaded operation MieScattering.jl gives slightly better performance compared to the numba-accelerated miepython version (which essentially also does LLVM compilation of the Python code).
 
 ## Version info
 
