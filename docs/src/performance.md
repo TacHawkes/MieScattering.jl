@@ -49,7 +49,7 @@ result_python_jit = zeros(ntests)
 
 for i = 1:ntests
     x = collect(LinRange(0.1, 20.0, N[i]))
-    a = @benchmark mie($m, $x, use_threads = false)
+    a = @benchmark mie($m, $x, use_threads=false)
     result[i] = median(a).time
     a = @benchmark mie($m, $x)
     result_threads[i] = median(a).time
@@ -73,8 +73,8 @@ ax =
         ylabel = "Execution Time [s]",
         title = "Julia improvement is $(round(minimp,digits=1))x to $(round(maximp,digits=1))x over numba (jit)",
     )
-scatterlines!(N, result * 1e-9, label = "Julia (MieScattering.jl)")
-scatterlines!(N, result_threads * 1e-9, label = "Julia Multi-Threading (MieScattering.jl)")
+scatterlines!(N, result * 1e-9, label = "Julia single-threaded (MieScattering.jl)")
+scatterlines!(N, result_threads * 1e-9, label = "Julia multi-threaded (MieScattering.jl)")
 scatterlines!(N, result_python * 1e-9, label = "PyCall (miepython)")
 scatterlines!(N, result_python_jit * 1e-9, label = "PyCall (miepython-jit)")
 axislegend(ax; position = :lt)
@@ -100,9 +100,9 @@ result_python = zeros(ntests)
 result_python_jit = zeros(ntests)
 
 for i = 1:ntests
-    λ0 = LinRange(300, 800, N[i])
+    λ0 = collect(LinRange(300, 800, N[i]))
     xx = 2π*r*mwater./λ0
-    a = @benchmark mie($mm, $xx, use_threads = false)
+    a = @benchmark mie($mm, $xx, use_threads=false)
     result[i] = median(a).time
     a = @benchmark mie($mm, $xx)
     result_threads[i] = median(a).time
@@ -126,8 +126,8 @@ ax =
         ylabel = "Execution Time [s]",
         title = "Julia improvement is $(round(minimp,digits=1))x to $(round(maximp,digits=1))x over numba (jit)",
     )
-scatterlines!(N, result * 1e-9, label = "Julia (MieScattering.jl)")
-scatterlines!(N, result_threads * 1e-9, label = "Julia Multi-Threading (MieScattering.jl)")
+scatterlines!(N, result * 1e-9, label = "Julia single-threaded (MieScattering.jl)")
+scatterlines!(N, result_threads * 1e-9, label = "Julia multi-threaded (MieScattering.jl)")
 scatterlines!(N, result_python * 1e-9, label = "PyCall (miepython)")
 scatterlines!(N, result_python_jit * 1e-9, label = "PyCall (miepython-jit)")
 axislegend(ax; position = :lt)
@@ -148,20 +148,23 @@ N = round.(Int, 10 .^ (LinRange(0, 3, ntests)))
 N[1] = 2
 
 result = zeros(ntests)
+result_threads = zeros(ntests)
 result_python = zeros(ntests)
 result_python_jit = zeros(ntests)
 
 for i = 1:ntests
     λ0 = collect(LinRange(300, 800, N[i]))
-    a = @benchmark ez_mie($m_sphere, $d, $λ0, $n_water)
+    a = @benchmark ez_mie($m_sphere, $d, $λ0, $n_water, use_threads=false)
     result[i] = median(a).time
+    a = @benchmark ez_mie($m_sphere, $d, $λ0, $n_water)
+    result_threads[i] = median(a).time
     a = @benchmark miepython.ez_mie($m_sphere, $d, $λ0, $n_water)
     result_python[i] = median(a).time
     a = @benchmark miepython_jit.ez_mie($m_sphere, $d, $λ0, $n_water)
     result_python_jit[i] = median(a).time
 end
 
-imp = result_python_jit ./ result
+imp = result_python_jit ./ result_threads
 
 minimp, maximp = extrema(imp)
 
@@ -175,7 +178,8 @@ ax =
         ylabel = "Execution Time [s]",
         title = "Julia improvement is $(round(minimp,digits=1))x to $(round(maximp,digits=1))x over numba (jit)",
     )
-scatterlines!(N, result * 1e-9, label = "Julia Multi-Threading (MieScattering.jl)")
+scatterlines!(N, result * 1e-9, label = "Julia single-threaded (MieScattering.jl)")
+scatterlines!(N, result_threads * 1e-9, label = "Julia multi-threaded (MieScattering.jl)")
 scatterlines!(N, result_python * 1e-9, label = "PyCall (miepython)")
 scatterlines!(N, result_python_jit * 1e-9, label = "PyCall (miepython-jit)")
 axislegend(ax; position = :lt)
@@ -195,26 +199,27 @@ N = round.(Int, 10 .^ (LinRange(0, 3, ntests)))
 N[1] = 2
 
 result = zeros(ntests)
+result_threads = zeros(ntests)
 result_python = zeros(ntests)
 result_python_jit = zeros(ntests)
 
 for i = 1:ntests
     θ = LinRange(-180, 180, N[i])
     μ = cosd.(θ)
-    a = @benchmark mie_S1_S2($m, $x, $μ)
+    a = @benchmark mie_S1_S2($m, $x, $μ, use_threads=false)
     result[i] = median(a).time
+    a = @benchmark mie_S1_S2($m, $x, $μ)
+    result_threads[i] = median(a).time
     a = @benchmark miepython.mie_S1_S2($m, $x, $μ)
     result_python[i] = median(a).time
     a = @benchmark miepython_jit.mie_S1_S2($m, $x, $μ)
     result_python_jit[i] = median(a).time
 end
 
-##
-imp = result_python_jit ./ result
+imp = result_python_jit ./ result_threads
 
 minimp, maximp = extrema(imp)
 
-##
 fig = Figure()
 ax =
     fig[1, 1] = Axis(
@@ -225,7 +230,8 @@ ax =
         ylabel = "Execution Time [s]",
         title = "Julia improvement is $(round(minimp,digits=1))x to $(round(maximp,digits=1))x over numba (jit)",
     )
-scatterlines!(N, result * 1e-9, label = "Julia Multi-Threading (MieScattering.jl)")
+scatterlines!(N, result * 1e-9, label = "Julia single-threaded (MieScattering.jl)")
+scatterlines!(N, result_threads * 1e-9, label = "Julia multi-threaded (MieScattering.jl)")
 scatterlines!(N, result_python * 1e-9, label = "PyCall (miepython)")
 scatterlines!(N, result_python_jit * 1e-9, label = "PyCall (miepython-jit)")
 axislegend(ax; position = :lt)
@@ -246,24 +252,25 @@ x = round.(Int, 10 .^ (LinRange(0, 3, ntests)))
 μ = cosd.(θ)
 
 result = zeros(ntests)
+result_threads = zeros(ntests)
 result_python = zeros(ntests)
 result_python_jit = zeros(ntests)
 
 for i = 1:ntests
-    a = @benchmark mie_S1_S2($m, $x[$i], $μ)
+    a = @benchmark mie_S1_S2($m, $x[$i], $μ, use_threads=false)
     result[i] = median(a).time
+    a = @benchmark mie_S1_S2($m, $x[$i], $μ)
+    result_threads[i] = median(a).time
     a = @benchmark miepython.mie_S1_S2($m, $x[$i], $μ)
     result_python[i] = median(a).time
     a = @benchmark miepython_jit.mie_S1_S2($m, $x[$i], $μ)
     result_python_jit[i] = median(a).time
 end
 
-##
-imp = result_python_jit ./ result
+imp = result_python_jit ./ result_threads
 
 minimp, maximp = extrema(imp)
 
-##
 fig = Figure()
 ax =
     fig[1, 1] = Axis(
@@ -274,7 +281,8 @@ ax =
         ylabel = "Execution Time [s]",
         title = "Julia improvement is $(round(minimp,digits=1))x to $(round(maximp,digits=1))x over numba (jit)",
     )
-scatterlines!(N, result * 1e-9, label = "Julia Multi-Threading (MieScattering.jl)")
+scatterlines!(N, result * 1e-9, label = "Julia single-threaded (MieScattering.jl)")
+scatterlines!(N, result_threads * 1e-9, label = "Julia multi-threaded (MieScattering.jl)")
 scatterlines!(N, result_python * 1e-9, label = "PyCall (miepython)")
 scatterlines!(N, result_python_jit * 1e-9, label = "PyCall (miepython-jit)")
 axislegend(ax; position = :lt)
