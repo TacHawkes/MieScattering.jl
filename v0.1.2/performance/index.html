@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Performance · MieScattering.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">MieScattering.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Introduction</a></li><li class="is-active"><a class="tocitem" href>Performance</a><ul class="internal"><li><a class="tocitem" href="#Version-info"><span>Version info</span></a></li><li><a class="tocitem" href="#Size-parameter"><span>Size parameter</span></a></li><li><a class="tocitem" href="#Embedded-spheres"><span>Embedded spheres</span></a></li><li><a class="tocitem" href="#ez_mie-testing"><span><code>ez_mie</code> testing</span></a></li><li><a class="tocitem" href="#Scattering-Phase-Function"><span>Scattering Phase Function</span></a></li><li><a class="tocitem" href="#As-a-function-of-sphere-size"><span>As a function of sphere size</span></a></li></ul></li><li><a class="tocitem" href="../api/">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Performance</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Performance</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/tachawkes/miescattering.jl/blob/main/docs/src/performance.md#L" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Performance-in-comparison-to-miepython"><a class="docs-heading-anchor" href="#Performance-in-comparison-to-miepython">Performance in comparison to miepython</a><a id="Performance-in-comparison-to-miepython-1"></a><a class="docs-heading-anchor-permalink" href="#Performance-in-comparison-to-miepython" title="Permalink"></a></h1><p>The following snippets show how MieScattering.jl performs compared to miepython. The tests are performed by calling miepython using <code>PyCall</code>. This might seem as an unfair comparison due to the (little) overhead of calling Python from Julia. However, if you are reading this you already want to use Julia for this task so resorting to PyCall might be your way to go anyway if there is no native Julia solution.</p><p>The performance is compared vs the jit-ed and non-jit-ed version. Additionally the Julia version is used with the parameter <code>use_threads=false</code>  in order to show the difference when using multi-threading in Julia (using the great package <a href="https://github.com/JuliaSIMD/Polyester.jl">Polyester.jl</a>). Multi-threading is the default setting, even though there is a slight disadvantage for small workloads. Even in single-threaded operation MieScattering.jl gives slightly better performance compared to the numba-accelerated miepython version (which essentially also does LLVM compilation of the Python code).</p><h2 id="Version-info"><a class="docs-heading-anchor" href="#Version-info">Version info</a><a id="Version-info-1"></a><a class="docs-heading-anchor-permalink" href="#Version-info" title="Permalink"></a></h2><pre><code class="nohighlight hljs">Julia Version 1.8.2
+Commit 36034abf260 (2022-09-29 15:21 UTC)
+Platform Info:
+  OS: macOS (arm64-apple-darwin21.3.0)
+  CPU: 10 × Apple M1 Pro
+  WORD_SIZE: 64
+  LIBM: libopenlibm
+  LLVM: libLLVM-13.0.1 (ORCJIT, apple-m1)
+  Threads: 8 on 8 virtual cores
+Environment:
+  JULIA_EDITOR = code
+
+sys.version = &quot;3.10.6 | packaged by conda-forge | (main, Aug 22 2022, 20:40:44) [Clang 13.0.1 ]&quot;</code></pre><h2 id="Size-parameter"><a class="docs-heading-anchor" href="#Size-parameter">Size parameter</a><a id="Size-parameter-1"></a><a class="docs-heading-anchor-permalink" href="#Size-parameter" title="Permalink"></a></h2><pre><code class="language-julia hljs">using MieScattering
+using BenchmarkTools
+using PyCall
+using Conda
+Conda.pip_interop(true)
+Conda.pip(&quot;install&quot;, &quot;miepython&quot;)
+using CairoMakie
+
+miepython_jit = pyimport(&quot;miepython.miepython&quot;)
+miepython = pyimport(&quot;miepython.miepython_nojit&quot;)
+
+ntests = 6
+m = 1.5
+N = round.(Int, 10 .^ (LinRange(0, 3, ntests)))
+N[1] = 2
+
+result = zeros(ntests)
+result_threads = zeros(ntests)
+result_python = zeros(ntests)
+result_python_jit = zeros(ntests)
+
+for i = 1:ntests
+    x = collect(LinRange(0.1, 20.0, N[i]))
+    a = @benchmark mie($m, $x, use_threads=false)
+    result[i] = median(a).time
+    a = @benchmark mie($m, $x)
+    result_threads[i] = median(a).time
+    a = @benchmark miepython.mie($m, $x)
+    result_python[i] = median(a).time
+    a = @benchmark miepython_jit.mie($m, $x)
+    result_python_jit[i] = median(a).time
+end
+
+imp = result_python_jit ./ result_threads
+
+minimp, maximp = extrema(imp)
+
+fig = Figure()
+ax =
+    fig[1, 1] = Axis(
+        fig,
+        yscale = log10,
+        xscale = log10,
+        xlabel = &quot;Number of sphere sizes calculated&quot;,
+        ylabel = &quot;Execution Time [s]&quot;,
+        title = &quot;Julia improvement is $(round(minimp,digits=1))x to $(round(maximp,digits=1))x over numba (jit)&quot;,
+    )
+scatterlines!(N, result * 1e-9, label = &quot;Julia single-threaded (MieScattering.jl)&quot;)
+scatterlines!(N, result_threads * 1e-9, label = &quot;Julia multi-threaded (MieScattering.jl)&quot;)
+scatterlines!(N, result_python * 1e-9, label = &quot;PyCall (miepython)&quot;)
+scatterlines!(N, result_python_jit * 1e-9, label = &quot;PyCall (miepython-jit)&quot;)
+axislegend(ax; position = :lt)
+fig</code></pre><p><img src="../assets/plot_perf_1.svg" alt/></p><h2 id="Embedded-spheres"><a class="docs-heading-anchor" href="#Embedded-spheres">Embedded spheres</a><a id="Embedded-spheres-1"></a><a class="docs-heading-anchor-permalink" href="#Embedded-spheres" title="Permalink"></a></h2><pre><code class="language-julia hljs">ntests = 6
+mwater = 4/3
+m = 1.0
+mm = m/mwater
+r = 500 # nm
+
+N = round.(Int, 10 .^ (LinRange(0, 3, ntests)))
+N[1] = 2
+
+result = zeros(ntests)
+result_threads = zeros(ntests)
+result_python = zeros(ntests)
+result_python_jit = zeros(ntests)
+
+for i = 1:ntests
+    λ0 = collect(LinRange(300, 800, N[i]))
+    xx = 2π*r*mwater./λ0
+    a = @benchmark mie($mm, $xx, use_threads=false)
+    result[i] = median(a).time
+    a = @benchmark mie($mm, $xx)
+    result_threads[i] = median(a).time
+    a = @benchmark miepython.mie($mm, $xx)
+    result_python[i] = median(a).time
+    a = @benchmark miepython_jit.mie($mm, $xx)
+    result_python_jit[i] = median(a).time
+end
+
+imp = result_python_jit ./ result_threads
+
+minimp, maximp = extrema(imp)
+
+fig = Figure()
+ax =
+    fig[1, 1] = Axis(
+        fig,
+        yscale = log10,
+        xscale = log10,
+        xlabel = &quot;Number of wavelengths calculated&quot;,
+        ylabel = &quot;Execution Time [s]&quot;,
+        title = &quot;Julia improvement is $(round(minimp,digits=1))x to $(round(maximp,digits=1))x over numba (jit)&quot;,
+    )
+scatterlines!(N, result * 1e-9, label = &quot;Julia single-threaded (MieScattering.jl)&quot;)
+scatterlines!(N, result_threads * 1e-9, label = &quot;Julia multi-threaded (MieScattering.jl)&quot;)
+scatterlines!(N, result_python * 1e-9, label = &quot;PyCall (miepython)&quot;)
+scatterlines!(N, result_python_jit * 1e-9, label = &quot;PyCall (miepython-jit)&quot;)
+axislegend(ax; position = :lt)
+fig</code></pre><p><img src="../assets/plot_perf_2.svg" alt/></p><h2 id="ez_mie-testing"><a class="docs-heading-anchor" href="#ez_mie-testing"><code>ez_mie</code> testing</a><a id="ez_mie-testing-1"></a><a class="docs-heading-anchor-permalink" href="#ez_mie-testing" title="Permalink"></a></h2><pre><code class="language-julia hljs">ntests = 6
+m_sphere = 1.0
+n_water = 4/3
+d = 1000 # nm
+
+N = round.(Int, 10 .^ (LinRange(0, 3, ntests)))
+N[1] = 2
+
+result = zeros(ntests)
+result_threads = zeros(ntests)
+result_python = zeros(ntests)
+result_python_jit = zeros(ntests)
+
+for i = 1:ntests
+    λ0 = collect(LinRange(300, 800, N[i]))
+    a = @benchmark ez_mie($m_sphere, $d, $λ0, $n_water, use_threads=false)
+    result[i] = median(a).time
+    a = @benchmark ez_mie($m_sphere, $d, $λ0, $n_water)
+    result_threads[i] = median(a).time
+    a = @benchmark miepython.ez_mie($m_sphere, $d, $λ0, $n_water)
+    result_python[i] = median(a).time
+    a = @benchmark miepython_jit.ez_mie($m_sphere, $d, $λ0, $n_water)
+    result_python_jit[i] = median(a).time
+end
+
+imp = result_python_jit ./ result_threads
+
+minimp, maximp = extrema(imp)
+
+fig = Figure()
+ax =
+    fig[1, 1] = Axis(
+        fig,
+        yscale = log10,
+        xscale = log10,
+        xlabel = &quot;Number of wavelengths calculated&quot;,
+        ylabel = &quot;Execution Time [s]&quot;,
+        title = &quot;Julia improvement is $(round(minimp,digits=1))x to $(round(maximp,digits=1))x over numba (jit)&quot;,
+    )
+scatterlines!(N, result * 1e-9, label = &quot;Julia single-threaded (MieScattering.jl)&quot;)
+scatterlines!(N, result_threads * 1e-9, label = &quot;Julia multi-threaded (MieScattering.jl)&quot;)
+scatterlines!(N, result_python * 1e-9, label = &quot;PyCall (miepython)&quot;)
+scatterlines!(N, result_python_jit * 1e-9, label = &quot;PyCall (miepython-jit)&quot;)
+axislegend(ax; position = :lt)
+fig</code></pre><p><img src="../assets/plot_perf_3.svg" alt/></p><h2 id="Scattering-Phase-Function"><a class="docs-heading-anchor" href="#Scattering-Phase-Function">Scattering Phase Function</a><a id="Scattering-Phase-Function-1"></a><a class="docs-heading-anchor-permalink" href="#Scattering-Phase-Function" title="Permalink"></a></h2><pre><code class="language-julia hljs">ntests = 6
+m = 1.5
+x = π/3
+
+N = round.(Int, 10 .^ (LinRange(0, 3, ntests)))
+N[1] = 2
+
+result = zeros(ntests)
+result_threads = zeros(ntests)
+result_python = zeros(ntests)
+result_python_jit = zeros(ntests)
+
+for i = 1:ntests
+    θ = LinRange(-180, 180, N[i])
+    μ = cosd.(θ)
+    a = @benchmark mie_S1_S2($m, $x, $μ, use_threads=false)
+    result[i] = median(a).time
+    a = @benchmark mie_S1_S2($m, $x, $μ)
+    result_threads[i] = median(a).time
+    a = @benchmark miepython.mie_S1_S2($m, $x, $μ)
+    result_python[i] = median(a).time
+    a = @benchmark miepython_jit.mie_S1_S2($m, $x, $μ)
+    result_python_jit[i] = median(a).time
+end
+
+imp = result_python_jit ./ result_threads
+
+minimp, maximp = extrema(imp)
+
+fig = Figure()
+ax =
+    fig[1, 1] = Axis(
+        fig,
+        yscale = log10,
+        xscale = log10,
+        xlabel = &quot;Number of angles calculated&quot;,
+        ylabel = &quot;Execution Time [s]&quot;,
+        title = &quot;Julia improvement is $(round(minimp,digits=1))x to $(round(maximp,digits=1))x over numba (jit)&quot;,
+    )
+scatterlines!(N, result * 1e-9, label = &quot;Julia single-threaded (MieScattering.jl)&quot;)
+scatterlines!(N, result_threads * 1e-9, label = &quot;Julia multi-threaded (MieScattering.jl)&quot;)
+scatterlines!(N, result_python * 1e-9, label = &quot;PyCall (miepython)&quot;)
+scatterlines!(N, result_python_jit * 1e-9, label = &quot;PyCall (miepython-jit)&quot;)
+axislegend(ax; position = :lt)
+fig</code></pre><p><img src="../assets/plot_perf_4.svg" alt/></p><h2 id="As-a-function-of-sphere-size"><a class="docs-heading-anchor" href="#As-a-function-of-sphere-size">As a function of sphere size</a><a id="As-a-function-of-sphere-size-1"></a><a class="docs-heading-anchor-permalink" href="#As-a-function-of-sphere-size" title="Permalink"></a></h2><pre><code class="language-julia hljs">ntests = 6
+m = 1.5 - 0.1*im
+
+x = round.(Int, 10 .^ (LinRange(0, 3, ntests)))
+
+θ = LinRange(-180, 180, 50)
+μ = cosd.(θ)
+
+result = zeros(ntests)
+result_threads = zeros(ntests)
+result_python = zeros(ntests)
+result_python_jit = zeros(ntests)
+
+for i = 1:ntests
+    a = @benchmark mie_S1_S2($m, $x[$i], $μ, use_threads=false)
+    result[i] = median(a).time
+    a = @benchmark mie_S1_S2($m, $x[$i], $μ)
+    result_threads[i] = median(a).time
+    a = @benchmark miepython.mie_S1_S2($m, $x[$i], $μ)
+    result_python[i] = median(a).time
+    a = @benchmark miepython_jit.mie_S1_S2($m, $x[$i], $μ)
+    result_python_jit[i] = median(a).time
+end
+
+imp = result_python_jit ./ result_threads
+
+minimp, maximp = extrema(imp)
+
+fig = Figure()
+ax =
+    fig[1, 1] = Axis(
+        fig,
+        yscale = log10,
+        xscale = log10,
+        xlabel = &quot;Sphere size parameter&quot;,
+        ylabel = &quot;Execution Time [s]&quot;,
+        title = &quot;Julia improvement is $(round(minimp,digits=1))x to $(round(maximp,digits=1))x over numba (jit)&quot;,
+    )
+scatterlines!(N, result * 1e-9, label = &quot;Julia single-threaded (MieScattering.jl)&quot;)
+scatterlines!(N, result_threads * 1e-9, label = &quot;Julia multi-threaded (MieScattering.jl)&quot;)
+scatterlines!(N, result_python * 1e-9, label = &quot;PyCall (miepython)&quot;)
+scatterlines!(N, result_python_jit * 1e-9, label = &quot;PyCall (miepython-jit)&quot;)
+axislegend(ax; position = :lt)
+fig</code></pre><p><img src="../assets/plot_perf_5.svg" alt/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Introduction</a><a class="docs-footer-nextpage" href="../api/">API »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Monday 7 November 2022 20:07">Monday 7 November 2022</span>. Using Julia version 1.8.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
