@@ -50,7 +50,7 @@ end
 function mie(
     m::AbstractVector{T},
     x::AbstractVector{V};
-    use_threads = true
+    use_threads = true,
 ) where {T<:Number,V<:Number}
     mlen, xlen = length(m), length(x)
 
@@ -65,7 +65,7 @@ function mie(
     qback = Vector{O}(undef, len)
     g = Vector{O}(undef, len)
 
-    @batch minbatch=(use_threads ? 1 : typemax(Int)) for i in eachindex(g)
+    @batch minbatch = (use_threads ? 1 : typemax(Int)) for i in eachindex(g)
         mm = mlen > 1 ? m[i] : first(m)
         xx = xlen > 1 ? x[i] : first(x)
         @inbounds qext[i], qsca[i], qback[i], g[i] = mie(mm, xx)
@@ -73,8 +73,8 @@ function mie(
 
     return qext, qsca, qback, g
 end
-mie(m::Number, x::AbstractVector; use_threads=true) = mie([m], x; use_threads)
-mie(m::AbstractVector, x::Number; use_threads=true) = mie(m, [x]; use_threads)
+mie(m::Number, x::AbstractVector; use_threads = true) = mie([m], x; use_threads)
+mie(m::AbstractVector, x::Number; use_threads = true) = mie(m, [x]; use_threads)
 
 """
     small_mie(m, x)
@@ -461,7 +461,8 @@ function mie_S1_S2(m, x, μ; norm = :albedo, use_threads = true)
     S2 = Vector{ComplexF64}(undef, nangles)
 
     nstop = length(a)
-    @batch minbatch=(use_threads ? 1 : typemax(Int)) for k = 1:nangles
+    normalization = normalization_factor(a, b, x; norm)
+    @batch minbatch = (use_threads ? 1 : typemax(Int)) for k = 1:nangles
         pi_nm2 = 0.0
         pi_nm1 = 1.0
         S1[k], S2[k] = zero(eltype(S1)), zero(eltype(S2))
@@ -473,12 +474,9 @@ function mie_S1_S2(m, x, μ; norm = :albedo, use_threads = true)
             pi_nm1 = ((2 * n + 1) * μ[k] * pi_nm1 - (n + 1) * pi_nm2) / n
             pi_nm2 = temp
         end
+        S1[k] /= normalization
+        S2[k] /= normalization
     end
-
-    normalization = normalization_factor(a, b, x; norm)
-
-    S1 ./= normalization
-    S2 ./= normalization
 
     return S1, S2
 end
@@ -604,7 +602,7 @@ Calculate the efficiencies of a sphere.
 - `qback`: the backscatter efficiency                      [-]
 - `g`: the average cosine of the scattering phase function [-]
 """
-function ez_mie(m, d, λ0, n_env = 1.0; use_threads=true)
+function ez_mie(m, d, λ0, n_env = 1.0; use_threads = true)
     m_env = @. m / n_env
     x_env = @. π * d / (λ0 / n_env)
     return mie(m_env, x_env; use_threads)
