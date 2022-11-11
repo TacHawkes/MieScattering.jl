@@ -119,7 +119,7 @@ function test_i_par_i_per_01()
     end
 end
 
-function test_mie_pase_matrix_basic()
+function test_mie_phase_matrix_basic()
     m = 1.5 - im*1.5
     x = 2
     μ = LinRange(-1, 1, 1000)
@@ -146,7 +146,7 @@ end
     test_13_unity_normalization()
     test_i_unpolarized_01()
     test_i_par_i_per_01()
-    test_mie_pase_matrix_basic()
+    test_mie_phase_matrix_basic()
     test_mie_phase_matrix_mu_scalar()
     test_mie_phase_matrix_symmetry()
 end
