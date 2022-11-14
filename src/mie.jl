@@ -15,7 +15,7 @@ Calculate the efficiencies for a sphere where m or x may be vectors.
 """
 function mie end
 
-function mie(m::T, x::V) where {T<:Number,V<:Number}
+function mie(m::T, x::V; use_threads = true) where {T<:Number,V<:Number}
     TT = float(real(promote_type(T, V)))
     if real(m) == zero(real(T)) && x < TT(0.1)
         qext, qsca, qback, g = small_conducting_mie(m, x)
