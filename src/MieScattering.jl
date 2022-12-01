@@ -45,7 +45,16 @@ using Polyester
 include("mie.jl")
 include("precompile.jl")
 
-export  mie, mie_S1_S2, mie_cdf, mie_mu_with_uniform_cdf, generate_mie_costheta,
-        i_unpolarized, i_par, i_per, ez_mie, ez_intensities, mie_phase_matrix
+export mie,
+    mie_S1_S2,
+    mie_cdf,
+    mie_mu_with_uniform_cdf,
+    generate_mie_costheta,
+    i_unpolarized,
+    i_par,
+    i_per,
+    ez_mie,
+    ez_intensities,
+    mie_phase_matrix
 
 end
