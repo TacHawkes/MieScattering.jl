@@ -15,3 +15,4 @@ Thumbs.db
 /Manifest.toml
 
 test/benchmark.jl
+test/cdf.jl
