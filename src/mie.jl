@@ -91,7 +91,7 @@ Typically used for small spheres where `x<0.1`
 - `qsca`: the scattering efficiency
 - `qback`: the backscatter efficiency
 - `g`: the average cosine of the scattering phase function
-    """
+"""
 function small_mie(m, x)
     m2 = m^2
     x2 = x^2
@@ -550,18 +550,18 @@ function mie_mu_with_uniform_cdf(m, x, num; norm = :albedo)
     cdf[1] = 0
 
     big_k = 0
-    for k in 1:(num-2)
+    for k = 1:(num-2)
         target = k / (num - 1)
-        while big_cdf[big_k + 1] < target
+        while big_cdf[big_k+1] < target
             big_k += 1
         end
 
-        Δ = big_cdf[big_k + 1] - target
-        Δ_cdf = big_cdf[big_k + 1] - big_cdf[big_k]
-        Δ_μ = big_μ[big_k + 1] - big_μ[big_k]
+        Δ = big_cdf[big_k+1] - target
+        Δ_cdf = big_cdf[big_k+1] - big_cdf[big_k]
+        Δ_μ = big_μ[big_k+1] - big_μ[big_k]
 
-        μ[k + 1] = big_μ[big_k + 1] - Δ/Δ_cdf*Δ_μ
-        cdf[k + 1] = target
+        μ[k+1] = big_μ[big_k+1] - Δ / Δ_cdf * Δ_μ
+        cdf[k+1] = target
     end
 
     μ[end] = 1
@@ -589,7 +589,7 @@ function generate_mie_costheta(μ_cdf)
     index = rand(1:(length(μ_cdf)-1))
 
     x = μ_cdf[index]
-    x += (μ_cdf[index+1] - μ_cdf[index])*rand()
+    x += (μ_cdf[index+1] - μ_cdf[index]) * rand()
 
     return x
 end
