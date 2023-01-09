@@ -15,10 +15,10 @@ Calculate the efficiencies for a sphere where m or x may be vectors.
 """
 function mie end
 
-function mie(m::T, x::V; use_threads = true) where {T<:Number,V<:Number}
+function mie(m::T, x::V; use_threads = true) where {T<:Number,V<:Real}
     TT = float(real(promote_type(T, V)))
     if real(m) == zero(real(T)) && x < TT(0.1)
-        qext, qsca, qback, g = small_conducting_mie(m, x)
+        qext, qsca, qback, g = small_conducting_mie(x)
     elseif real(m) > zero(real(T)) && abs(m) * x < TT(0.1)
         qext, qsca, qback, g = small_mie(m, x)
     else
@@ -51,7 +51,7 @@ function mie(
     m::AbstractVector{T},
     x::AbstractVector{V};
     use_threads = true,
-) where {T<:Number,V<:Number}
+) where {T<:Number,V<:Real}
     mlen, xlen = length(m), length(x)
 
     if xlen > 1 && mlen > 1 && xlen != mlen
@@ -131,7 +131,6 @@ Typically used for small conducting spheres where `x < 0.1` and
 `real(m) == 0`.
 
 # Parameters
-- `m`: the complex index of refraction of the sphere
 - `x`: the size parameter of the sphere
 
 # Output
@@ -140,7 +139,7 @@ Typically used for small conducting spheres where `x < 0.1` and
 - `qback`: the backscatter efficiency
 - `g`: the average cosine of the scattering phase function
 """
-function small_conducting_mie(m, x)
+function small_conducting_mie(x)
     ahat1 = (im * 2 / 3 * (1 - 0.2 * x^2)) / (1 - 0.5 * x^2 + im * 2 / 3 * x^3)
     bhat1 = (im * (x^2 - 10.0) / 30.0) / (1 + 0.5 * x^2 - im * x^3 / 3.0)
     ahat2 = im * x^2 / 30
