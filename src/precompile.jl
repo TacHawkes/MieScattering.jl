@@ -1,6 +1,6 @@
-using SnoopPrecompile
+using PrecompileTools
 
-@precompile_setup begin
+@setup_workload begin
     m_sphere = 1.0
     n_water = 4 / 3
     d = 1000
@@ -10,7 +10,7 @@ using SnoopPrecompile
     m = 1.5 - im * 1.0
     θ = 0:30:180
     μ = cosd.(θ)
-    @precompile_all_calls begin
+    @compile_workload begin
         qext, qsca, qback, g = ez_mie(m_sphere, d, λ0, n_water)
 
         qext, qsca, qback, g = mie(m, x)
