@@ -17,9 +17,9 @@ function mie end
 
 function mie(m::T, x::V; use_threads = true) where {T<:Number,V<:Real}
     TT = float(real(promote_type(T, V)))
-    if real(m) == zero(real(T)) && x < TT(0.1)
+    if iszero(real(m)) && x < TT(0.1)
         qext, qsca, qback, g = small_conducting_mie(x)
-    elseif real(m) > zero(real(T)) && abs(m) * x < TT(0.1)
+    elseif !iszero(real(m)) && abs(m) * x < TT(0.1)
         qext, qsca, qback, g = small_mie(m, x)
     else
         a, b = mie_An_Bn(m, x)
@@ -30,7 +30,7 @@ function mie(m::T, x::V; use_threads = true) where {T<:Number,V<:Real}
         qext = 2 * sum(i -> (2i + 1) * (real(a[i]) + real(b[i])), n) / x^2
         qsca = qext
 
-        if imag(m) != zero(T)
+        if !iszero(imag(m))
             qsca = 2 * sum(i -> (2i + 1) * (abs2(a[i]) + abs2(b[i])), n) / x^2
         end
 
@@ -111,7 +111,7 @@ function small_mie(m, x)
 
     qsca = 6 * x^4 * T
 
-    if real(m) == 0
+    if iszero(real(m))
         qext = qsca
     else
         qext = 6 * x * real(ahat1 + bhat1 + 5 * ahat2 / 3)
@@ -181,7 +181,7 @@ function mie_An_Bn(m, x)
     xi_nm1 = psi_nm1 + im * cos(x)
     xi_n = psi_n + im * (cos(x) / x + sin(x))
 
-    if real(m) > 0.0
+    if !iszero(real(m))
         D = D_calc(m, x, nstop + 1)
 
         for n = 1:(nstop-1)
@@ -342,11 +342,11 @@ function small_mie_conducting_S1_S2(m, x, μ)
        x^3 *
        (bhat1 + ahat1 * μ + 5 / 3 * bhat2 * μ + 5 / 3 * ahat2 * (2 * μ^2 - 1))
 
-    qext = x^4 * (6 * abs2(ahat1) + 6 * abs(bhat1) + 10 * abs2(ahat2) + 10 * abs2 / bhat2)
+    qext = x^4 * (6 * abs2(ahat1) + 6 * abs(bhat1) + 10 * abs2(ahat2) + 10 * abs2(bhat2))
 
     norm = √(qext * π * x^2)
-    S1 /= norm
-    S2 /= norm
+    S1 ./= norm
+    S2 ./= norm
 
     return S1, S2
 end
@@ -388,8 +388,8 @@ function small_mie_S1_S2(m, x, μ)
     S2 = @. 1.5 * x3 * (bhat1 + ahat1 * μ + 5 / 3 * ahat2 * (2 * μ^2 - 1))
 
     norm = √(π * 6 * x3 * real(ahat1 + bhat1 + 5 * ahat2 / 3))
-    S1 /= norm
-    S2 /= norm
+    S1 ./= norm
+    S2 ./= norm
 
     return S1, S2
 end
@@ -464,7 +464,7 @@ function mie_S1_S2(m, x, μ; norm = :albedo, use_threads = true)
     @batch minbatch = (use_threads ? 1 : typemax(Int)) for k = 1:nangles
         pi_nm2 = 0.0
         pi_nm1 = 1.0
-        S1[k], S2[k] = zero(eltype(S1)), zero(eltype(S2))
+        @inbounds S1[k], S2[k] = zero(eltype(S1)), zero(eltype(S2))
         @inbounds for n = 1:nstop
             τ_nm1 = n * μ[k] * pi_nm1 - (n + 1) * pi_nm2
             S1[k] += (2 * n + 1) * (pi_nm1 * a[n] + τ_nm1 * b[n]) / (n + 1) / n
@@ -473,8 +473,8 @@ function mie_S1_S2(m, x, μ; norm = :albedo, use_threads = true)
             pi_nm1 = ((2 * n + 1) * μ[k] * pi_nm1 - (n + 1) * pi_nm2) / n
             pi_nm2 = temp
         end
-        S1[k] /= normalization
-        S2[k] /= normalization
+        @inbounds S1[k] /= normalization
+        @inbounds S2[k] /= normalization
     end
 
     return S1, S2
@@ -509,7 +509,7 @@ function mie_cdf(m, x, num; norm = :albedo)
 
     cdf = zeros(num)
     total = 0.0
-    for i = 1:num
+    @inbounds for i = 1:num
         total += s[i] * 2 * π * 2 / num
         cdf[i] = total
     end
@@ -549,7 +549,7 @@ function mie_mu_with_uniform_cdf(m, x, num; norm = :albedo)
     cdf[1] = 0
 
     big_k = 0
-    for k = 1:(num-2)
+    @inbounds for k = 1:(num-2)
         target = k / (num - 1)
         while big_cdf[big_k+1] < target
             big_k += 1
