@@ -408,7 +408,7 @@ Figure out scattering function normalization.
 # Output
 scaling factor needed for scattering function
 """
-function normalization_factor(a, b, x; norm)
+function normalization_factor(a, b, x; norm = :albedo)
     norm === :bohren && return 1 / 2
     norm === :wiscombe && return 1.0
 
