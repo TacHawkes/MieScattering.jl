@@ -7,5 +7,6 @@ using Test
     include("suites/small.jl")
     include("suites/perfectlyreflecting.jl")
     include("suites/anglescattering.jl")
+    include("suites/phasematrix.jl")
     include("suites/notebook.jl")
 end

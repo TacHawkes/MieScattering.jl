@@ -400,35 +400,39 @@ end
 Figure out scattering function normalization.
 
 # Parameters
-- `a`: complex array of An coefficients
-- `b`: complex array of Bn coefficients
+- `m`: complex index of refraction of sphere
 - `x`: dimensionless sphere size
 - `norm`: symbol describing type of normalization
 
 # Output
 scaling factor needed for scattering function
 """
-function normalization_factor(a, b, x; norm = :albedo)
+function normalization_factor(m, x; norm = :albedo)
     norm === :bohren && return 1 / 2
     norm === :wiscombe && return 1.0
 
-    n = 1:length(a)
-    qext = 2 * sum(i -> (2i + 1) * (real(a[i]) + real(b[i])), n) / x^2
+    if norm ∈ (:qsca, :scattering_efficiency)
+        return x * √(π)
+    end
 
-    (norm === :a || norm === :albedo) && return √(π * x^2 * qext)
+    qext, qsca, _, _ = mie(m, x)
 
-    qsca = 2 * sum(i -> (2i + 1) * (abs2(a[i]) + abs2(b[i])), n) / x^2
+    if norm ∈ (:a, :albedo)
+        return x * √(π * qext)
+    end
 
-    (norm === :one || norm === :unity) && return √(qsca * π * x^2)
+    if norm ∈ (:one, :unity)
+        return x * √(π * qsca)
+    end
 
-    norm === :four_pi && return √(qsca * x^2 / 4)
+    norm === :four_pi && return x * √(qsca / 4)
 
-    (norm === :qsca || norm === :scattering_efficiency) && return √(π * x^2)
-
-    (norm === :qext || norm === :extinction_efficiency) && return √(qsca * π * x^2 / qext)
+    if norm ∈ (:qext, :extinction_efficiency)
+        return x * √(qsca * π / qext)
+    end
 
     throw(
-        DomainError(
+        ArgumentError(
             "Normalization must be one of :albedo (default), :one, :four_pi, :qext,
             :qsca, :bohren or :wiscombe",
         ),
@@ -460,7 +464,7 @@ function mie_S1_S2(m, x, μ; norm = :albedo, use_threads = true)
     S2 = Vector{ComplexF64}(undef, nangles)
 
     nstop = length(a)
-    normalization = normalization_factor(a, b, x; norm)
+    normalization = normalization_factor(m, x; norm)
     @batch minbatch = (use_threads ? 1 : typemax(Int)) for k = 1:nangles
         pi_nm2 = 0.0
         pi_nm1 = 1.0
@@ -745,16 +749,16 @@ function mie_phase_matrix(m, x, μ::AbstractVector; norm = :albedo)
         m1 = abs2(s1[i])
         m2 = abs2(s2[i])
         s21 = real(0.5 * (s1[i] * s2_star + s2[i] * s1_star))
-        d21 = real(-0.5 * (s1[i] * s2_star - s2[i] * s1_star))
+        d21 = real(-0.5*im * (s1[i] * s2_star - s2[i] * s1_star))
 
         phase[1, 1, i] = 0.5 * (m2 + m1)
-        phase[1, 2, i] = 0.5 * (m2 + m1)
+        phase[1, 2, i] = 0.5 * (m2 - m1)
         phase[2, 1, i] = phase[1, 2, i]
         phase[2, 2, i] = phase[1, 1, i]
         phase[3, 3, i] = s21
-        phase[2, 4, i] = -d21
-        phase[3, 2, i] = d21
-        phase[3, 3, i] = s21
+        phase[3, 4, i] = -d21
+        phase[4, 3, i] = d21
+        phase[4, 4, i] = s21
     end
 
     return phase
