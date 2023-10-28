@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Introduction · MieScattering.jl</title><script data-outdated-warner src="assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href>MieScattering.jl</a></span></div><form class="docs-search" action="search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>Introduction</a><ul class="internal"><li class="toplevel"><a class="tocitem" href="#Switch-from-miepython-to-MieScattering.jl"><span>Switch from miepython to MieScattering.jl</span></a></li><li class="toplevel"><a class="tocitem" href="#Script-examples"><span>Script examples</span></a></li><li><a class="tocitem" href="#Simple-Dielectric"><span>Simple Dielectric</span></a></li><li><a class="tocitem" href="#Glass-Spheres"><span>Glass Spheres</span></a></li><li><a class="tocitem" href="#Water-Droplets"><span>Water Droplets</span></a></li><li><a class="tocitem" href="#Small-Gold-Spheres"><span>Small Gold Spheres</span></a></li></ul></li><li><a class="tocitem" href="performance/">Performance</a></li><li><a class="tocitem" href="api/">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Introduction</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Introduction</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/tachawkes/miescattering.jl/blob/main/docs/src/index.md#L" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="MieScattering.jl"><a class="docs-heading-anchor" href="#MieScattering.jl">MieScattering.jl</a><a id="MieScattering.jl-1"></a><a class="docs-heading-anchor-permalink" href="#MieScattering.jl" title="Permalink"></a></h1><p>The package <code>MieScattering.jl</code> is a pure-Julia counterpart to the <code>miepython</code> package developed by Scott Prahl. This package is a 1:1 port and therefore copies the syntax, parts of the documentation and the Mie scattering related assumptions. Checkout the documentation of <a href="https://miepython.readthedocs.io/en/latest/index.html">miepython</a> to find out more.</p><h1 id="Switch-from-miepython-to-MieScattering.jl"><a class="docs-heading-anchor" href="#Switch-from-miepython-to-MieScattering.jl">Switch from miepython to MieScattering.jl</a><a id="Switch-from-miepython-to-MieScattering.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Switch-from-miepython-to-MieScattering.jl" title="Permalink"></a></h1><p>The syntax is mostly the same. Just convert your calls from Python to Julia and you should get the same numerical results.</p><h1 id="Script-examples"><a class="docs-heading-anchor" href="#Script-examples">Script examples</a><a id="Script-examples-1"></a><a class="docs-heading-anchor-permalink" href="#Script-examples" title="Permalink"></a></h1><p>The following shows how to convert the four <code>miepython</code> <a href="https://miepython.readthedocs.io/en/latest/index.html#script-examples-for-those-that-don-t-do-jupyter">example</a> scripts to Julia.</p><h2 id="Simple-Dielectric"><a class="docs-heading-anchor" href="#Simple-Dielectric">Simple Dielectric</a><a id="Simple-Dielectric-1"></a><a class="docs-heading-anchor-permalink" href="#Simple-Dielectric" title="Permalink"></a></h2><pre><code class="language- hljs">&quot;&quot;&quot;
+Plot the extinction efficiency as a function of particle size.
+
+This is a comparision of total extinction for non-absorbing and absorbing
+spheres.
+&quot;&quot;&quot;
+
+using MieScattering
+using CairoMakie
+
+x = LinRange(0.1, 100, 300)
+
+# mie() will automatically try to do the right thing
+qext, qsca, qback, g = mie(1.5, x)
+
+fig = Figure()
+ax =
+    fig[1, 1] = Axis(
+        fig,
+        xlabel = &quot;Size parameter (-)&quot;,
+        ylabel = &quot;Qext&quot;,
+        title = &quot;Comparison of extinction for absorbing and non-absorbing spheres&quot;,
+    )
+lines!(x, qext, color = :red, label = &quot;1.5&quot;)
+
+qext, qsca, qback, g = mie(1.5 - 0.1 * im, x)
+lines!(x, qext, color = :blue, label = &quot;1.5-0.1j&quot;)
+
+axislegend()
+
+fig</code></pre><h2 id="Glass-Spheres"><a class="docs-heading-anchor" href="#Glass-Spheres">Glass Spheres</a><a id="Glass-Spheres-1"></a><a class="docs-heading-anchor-permalink" href="#Glass-Spheres" title="Permalink"></a></h2><pre><code class="language- hljs">&quot;&quot;&quot;
+Plot the scattering efficiency for 4 micron glass spheres.
+
+This graph shows scattering as a function of wavelength.
+&quot;&quot;&quot;
+
+using MieScattering
+using CairoMakie
+
+radius = 2 # in microns
+λ0 = LinRange(0.2, 1.2, 200)
+x = 2π * radius ./ λ0
+
+# from https://refractiveindex.info/?shelf=glass&amp;book=BK7&amp;page=SCHOTT
+m2 = @. 1 + 1.03961212 / (1 - 0.00600069867 / λ0^2)
+m2 += @. 0.231792344 / (1 - 0.0200179144 / λ0^2)
+m2 += @. 1.01046945 / (1 - 103.560653 / λ0^2)
+m = .√(m2)
+qext, qsca, qback, g = mie(m, x)
+
+fig = Figure()
+ax =
+    fig[1, 1] = Axis(
+        fig,
+        xlabel = &quot;Wavelength [nm]&quot;,
+        ylabel = &quot;Scattering efficiency&quot;,
+        title = &quot;BK7 glass spheres 4 micron diameter&quot;,
+    )
+lines!(λ0 * 1000, qsca)
+
+fig</code></pre><h2 id="Water-Droplets"><a class="docs-heading-anchor" href="#Water-Droplets">Water Droplets</a><a id="Water-Droplets-1"></a><a class="docs-heading-anchor-permalink" href="#Water-Droplets" title="Permalink"></a></h2><pre><code class="language- hljs">&quot;&quot;&quot;
+Plot the scattering cross section for 1 micron water droplets.
+
+The plot shows the cross section as a function of wavelength.
+&quot;&quot;&quot;
+
+using MieScattering
+using CairoMakie
+
+num = 100
+radius = 0.5 # in microns
+λ0 = LinRange(0.2, 1.2, 200)
+x = 2π * radius ./ λ0
+
+# from https://refractiveindex.info/?shelf=main&amp;book=H2O&amp;page=Daimon - 24.0C
+m2 = @. 1.0 + 5.666959820E-1 / (1.0 - 5.084151894E-3 / λ0^2)
+m2 += @. 1.731900098E-1 / (1.0 - 1.818488474E-2 / λ0^2)
+m2 += @. 2.095951857E-2 / (1.0 - 2.625439472E-2 / λ0^2)
+m2 += @. 1.125228406E-1 / (1.0 - 1.073842352E1 / λ0^2)
+m = .√(m2)
+qext, qsca, qback, g = mie(m, x)
+
+fig = Figure()
+ax =
+    fig[1, 1] = Axis(
+        fig,
+        xlabel = &quot;Wavelength [nm]&quot;,
+        ylabel = &quot;Scattering Cross Section (µm²)&quot;,
+        title = &quot;Water Droplets (1 µm diameter)&quot;,
+    )
+lines!(λ0 * 1000, qsca)
+
+fig</code></pre><h2 id="Small-Gold-Spheres"><a class="docs-heading-anchor" href="#Small-Gold-Spheres">Small Gold Spheres</a><a id="Small-Gold-Spheres-1"></a><a class="docs-heading-anchor-permalink" href="#Small-Gold-Spheres" title="Permalink"></a></h2><pre><code class="language- hljs">&quot;&quot;&quot;
+Plot the scattering cross section for 100nm gold spheres.
+The resulting graph is as a function of wavelength.
+&quot;&quot;&quot;
+
+using MieScattering
+using CairoMakie
+
+# from https://refractiveindex.info/?shelf = main&amp;book = Au&amp;page = Johnson
+# wavelength in microns
+ref_lam = [ 0.1879, 0.1916, 0.1953, 0.1993, 0.2033, 0.2073, 0.2119, 0.2164,
+            0.2214, 0.2262, 0.2313, 0.2371, 0.2426, 0.2490, 0.2551, 0.2616,
+            0.2689, 0.2761, 0.2844, 0.2924, 0.3009, 0.3107, 0.3204, 0.3315,
+            0.3425, 0.3542, 0.3679, 0.3815, 0.3974, 0.4133, 0.4305, 0.4509,
+            0.4714, 0.4959, 0.5209, 0.5486, 0.5821, 0.6168, 0.6595, 0.7045,
+            0.7560, 0.8211, 0.8920, 0.9840, 1.0880, 1.2160, 1.3930, 1.6100, 1.9370]
+
+ref_n = [   1.28, 1.32, 1.34, 1.33, 1.33, 1.30, 1.30, 1.30, 1.30, 1.31, 1.30,
+            1.32, 1.32, 1.33, 1.33, 1.35, 1.38, 1.43, 1.47, 1.49, 1.53, 1.53,
+            1.54, 1.48, 1.48, 1.50, 1.48, 1.46, 1.47, 1.46, 1.45, 1.38, 1.31,
+            1.04, 0.62, 0.43, 0.29, 0.21, 0.14, 0.13, 0.14, 0.16, 0.17, 0.22,
+            0.27, 0.35, 0.43, 0.56, 0.92]
+
+ref_k = [   1.188, 1.203, 1.226, 1.251, 1.277, 1.304, 1.350, 1.387, 1.427,
+            1.460, 1.497, 1.536, 1.577, 1.631, 1.688, 1.749, 1.803, 1.847,
+            1.869, 1.878, 1.889, 1.893, 1.898, 1.883, 1.871, 1.866, 1.895,
+            1.933, 1.952, 1.958, 1.948, 1.914, 1.849, 1.833, 2.081, 2.455,
+            2.863, 3.272, 3.697, 4.103, 4.542, 5.083, 5.663, 6.350, 7.150,
+            8.145, 9.519, 11.21, 13.78]
+
+radius = 0.1 # in microns
+m = ref_n - im * ref_k
+x = 2π * radius ./ ref_lam
+cross_section_area = π * radius ^ 2
+mu_a = 4 * π * ref_k ./ ref_lam    # nm
+qext, qsca, qback, g = mie(m, x)
+
+sca_cross_section = qsca * cross_section_area
+abs_cross_section = (qext - qsca) * cross_section_area
+
+fig = Figure()
+
+ax = fig[1,1] = Axis(fig, title=&quot;Gold Spheres 200nm diameter&quot;)
+hidexdecorations!(ax)
+scatter!(ref_lam * 1000, ref_n, color=:blue, marker=:circle)
+scatter!(ref_lam * 1000, -ref_k, color=:red, marker=:rect)
+text!(700, 1; text=&quot;real refractive index&quot;, color=:blue)
+text!(1100, -6; text=&quot;imaginary refractive index&quot;, color=:red)
+ylims!(-14,5)
+
+ax = fig[2,1] = Axis(fig, ylabel=&quot;Absorption Depth [nm]&quot;)
+scatter!(ref_lam * 1000, 1000 ./ mu_a, color=:blue, marker=:circle)
+
+ax = fig[3,1] = Axis(fig, xlabel=&quot;Wavelength [nm]&quot;, ylabel=&quot;Cross Section [µm²]&quot;)
+scatter!(ref_lam * 1000, abs_cross_section, color=:blue, marker=:circle)
+scatter!(ref_lam * 1000, sca_cross_section, color=:red, marker=:rect)
+text!(700, 0.01; text=&quot;absorption&quot;, color=:blue)
+text!(750, 0.1; text=&quot;scattering&quot;, color=:red)
+
+fig</code></pre></article><nav class="docs-footer"><a class="docs-footer-nextpage" href="performance/">Performance »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Saturday 28 October 2023 08:08">Saturday 28 October 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
