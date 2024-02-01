@@ -713,8 +713,8 @@ function ez_intensities(m, d, λ0, μ, n_env = 1.0, norm = :albedo)
     λ_env = λ0 / n_env
     x_env = π * d / λ_env
     s1, s2 = mie_S1_S2(m_env, x_env, μ; norm)
-    ipar = abs2(s2)
-    iper = abs2(s1)
+    ipar = abs2.(s2)
+    iper = abs2.(s1)
     return ipar, iper
 end
 
